@@ -111,7 +111,7 @@ In go, only "ctrl_intmat_enc.go", which is an encrypted file of "ctrl_intmat_q.p
 It explains the preparations before use, how to use the simulation file, how to use the Ouanser Interactive Labs, and how to use the actual hardware.
 
 ### Before using
-This code should work for both Windows and WSL (Windows Subsystem for Linux) environments.
+This code should work for both Windows and WSL (Windows Subsystem for Linux) environments.(**If you want to use only Windows environment, then only can't use OpenFHE-python wrapper and needs more several setting**)
 Please refer to the link [WSL installation method](https://learn.microsoft.com/ko-kr/windows/wsl/install) for instructions on installing WSL.
 
 This requires three essential elements:
