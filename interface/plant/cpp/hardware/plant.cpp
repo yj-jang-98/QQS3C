@@ -51,7 +51,7 @@ int main()
 
     // swing-up standing gate
     bool stand_run = false;
-    double er = 0.2;
+    double er = 0.1;
 
     // calculation angle
     double theta = 0.0;
@@ -82,6 +82,7 @@ int main()
             {
                 cout << "set" << endl;
                 stand_run = true;
+                continue;
             }
         }
         else
