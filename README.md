@@ -125,8 +125,7 @@ at least. (The following description is after installing the above three element
 If WSL is installed, the appropriate Linux OS is Ubuntu-24.04 LTS version.
 
 ### Settings for operation
-#### Windows and WSL using
-##### WSL environment
+#### WSL environment
 Assuming you have Python and Go installed.
 If not, you should refer to the above version and install it.
 
@@ -154,7 +153,7 @@ If not, you should refer to the above version and install it.
 3. Lattigo installation
    * This is automatically handled by go mod tidy, so no preparation is required.
      
-##### Windows environment
+#### Windows environment
 1. You need to download the code via git clone on PowerShell page.
    ``` powershell
      git clone "https://github.com/RFA0608/QQS3C.git"
@@ -205,10 +204,6 @@ If not, you should refer to the above version and install it.
     python -m pip install --upgrade --find-links "C:\Program Files\Quanser\Quanser SDK\python" "C:\Program Files\Quanser\Quanser SDK\python\quanser_api-2025.11.1-py2.py3-none-any.whl"
   ```
   on the terminal and connect the SDK (this path can find in step 4).
-  
-#### Only Windows using
-
-
 
 ### Ready to operate
 There are two different executions in each environment.
