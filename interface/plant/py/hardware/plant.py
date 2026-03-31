@@ -1,168 +1,155 @@
-# get quanser interface lib and tcp_protocol description (vscode[debuger] launched at root directory)
-import sys
-sys.path.append(r"C:\Quanser\0_libraries\python")
-from pal.products.qube import QubeServo2, QubeServo3
-from pal.utilities.math import SignalGenerator, ddt_filter
-from pal.utilities.scope import Scope
+#define _USE_MATH_DEFINES
+#include <iostream>
+#include <string>
+#include <cmath>
+#include <chrono>
+#include "tcp_protocol_server_windows.h"
+#include "hil.h"
+#include "quanser_timer.h"
+using namespace std;
 
-sys.path.append(r"./py")
-import tcp_protocol_server as tcs
+const string host = "0.0.0.0";
+const int port = 9999;
 
-# init tcp host and port
-HOST = '0.0.0.0'
-PORT = 9999
+int main()
+{
+    t_card board;
+    t_error result;
+    // if you want to use hardware change to 1 else 0 is virtual(QLab)
+    bool hardware = 0;
 
-# get other tools
-from threading import Thread
-import signal
-import time
-import math
-import numpy as np
+    if (hardware)
+    {
+        result = hil_open("qube_servo3_usb", "0", &board);
+        if (result < 0)
+        {
+            cout << "failure to connect hardware" << endl;
+            return -1;
+        }
+    }
+    else
+    {
+        result = hil_open("qube_servo3_usb", "0@tcpip://localhost:18923?nagle='off'", &board);
+        if (result < 0)
+        {
+            cout << "failure to connect QLab" << endl;
+            return -1;
+        }
+    }
+   
+    // simulation_time is total run time, sample_time is sample_time.
+    int simulation_time = 30;
+    double sample_time = 0.02;
+    t_timeout interval;
+    t_timeout timeout;
+    timeout_get_timeout(&interval, sample_time);
+    timeout_get_current_time(&timeout);
 
-# Thread hanlder initialization
-global KILL_THREAD
-KILL_THREAD = False
-def sig_handler(*args):
-    global KILL_THREAD
-    KILL_THREAD = True
-signal.signal(signal.SIGINT, sig_handler)
+    // angle[0] = base, angle[1] = pendulum
+    double angle[2] = { 0.0, 0.0 };
+    double voltage = 0.0;
+    int32_t encoder_counts[2];
+    uint32_t encoder_channels[2] = { 0, 1 };
+    uint32_t analog_channels[2] = { 0 };
+    uint32_t digital_channels[1] = { 0 };
+    t_boolean digital_values[1] = { 1 };
+    hil_write_digital(board, digital_channels, 1, digital_values);
 
-# simulation time and plotting set
-simulationTime = 30 # will run for 30 seconds
-color = np.array([0, 1, 0], dtype=np.float64)
+    // swing-up standing gate
+    bool stand_run = false;
+    double er = 0.1;
 
-scopePendulum = Scope(
-    title='Pendulum encoder - alpha (rad)',
-    timeWindow=10,
-    xLabel='Time (s)',
-    yLabel='Position (rad)')
-scopePendulum.attachSignal(name='Pendulum - alpha (rad)',  width=1)
+    // calculation angle
+    double theta = 0.0;
+    double alpha = 0.0;
+    double alpha_deg = 0.0;
 
-scopeBase = Scope(
-    title='Base encoder - theta (rad)',
-    timeWindow=10,
-    xLabel='Time (s)',
-    yLabel='Position (rad)')
-scopeBase.attachSignal(name='Base - theta (rad)',  width=1)
+    // TCP/IP ready
+    tcp_server tcsp = tcp_server(host, port);
 
-scopeVoltage = Scope(
-    title='Motor Voltage',
-    timeWindow=10,
-    xLabel='Time (s)',
-    yLabel='Voltage (volts)')
-scopeVoltage.attachSignal(name='Voltage',  width=1)
+    // Just check loop/total time
+    auto stc = chrono::high_resolution_clock::now();
+    auto edc = chrono::high_resolution_clock::now();
+    auto duration = chrono::duration_cast<chrono::nanoseconds>(edc - stc);
+    double run_time = duration.count() / 1000000;
+    double stack_time = 0.0;
 
-# control-system scenario
-def control_loop():
-    # interface setting #
-    # ------------------------------------------------ #
-    # qube version, using hardware, pendulum
-    qubeversion = 3
-    
-    # if you want to use Ouanser Interactive Labs, you will change to 0
-    hardware = 1
-    
-    pendulum = 1
+    // control loop
+    for (long long i = 0; i < (long long)((double)simulation_time / sample_time); i++)
+    {
+        stc = chrono::high_resolution_clock::now();
 
-    # frequency of system holder and sampler
-    frequency = 50 # hz
+        // time sleep
+        timeout_add(&timeout, &timeout, &interval);
+        qtimer_sleep(&timeout);
 
-    # for scope sampling rate
-    countMax = frequency / 50
-    count = 0
+        // read sensor
+        hil_read_encoder(board, encoder_channels, 2, encoder_counts);
+        angle[0] = encoder_counts[0] * (2.0 * M_PI / 2048.0);
+        angle[1] = encoder_counts[1] * (2.0 * M_PI / 2048.0);
 
-    # class initialization
-    QubeClass = QubeServo3
+        // calc output
+        theta = -angle[0];
+        alpha = fmod(angle[1], 2 * M_PI);
+        if (alpha < 0) alpha +=  2 * M_PI;
+        alpha = alpha - M_PI;
 
-    # swing-up standing gate
-    stand_run = False
-    er = 0.02
+        alpha_deg = alpha * 180 / M_PI;
 
-    # describe #
-    # ------------------------------------------------ #
-    # instance of hardware model 
-    with QubeClass(hardware=hardware, pendulum=pendulum, frequency=frequency) as myQube:
-        # instance of tcp layer
-        with tcs.tcp_server(HOST, PORT) as tcsp:
-            startTime = 0
-            timeStamp = 0
-            def elapsed_time():
-                return time.time() - startTime
-            startTime = time.time()
+        if (!stand_run)
+        {
+            // check output 
+            cout << "pendulum angle: " << alpha << endl;
+            cout << "base angle: " << theta << endl;
 
-            while timeStamp < simulationTime and not KILL_THREAD:
-                if not stand_run:
-                    # read sensor information
-                    myQube.read_outputs()
+            if (abs(alpha) < er)
+            {
+                cout << "set" << endl;
+                stand_run = true;
+            }
+        }
+        else
+        {
+            tcsp.Send<string>("run");
 
-                    # calc output
-                    theta = myQube.motorPosition * -1
-                    alpha_f =  myQube.pendulumPosition
-                    alpha = np.mod(alpha_f, 2*np.pi) - np.pi
-                    alpha_deg = alpha * 180 / np.pi
+            tcsp.Send<double>(-theta);
+            tcsp.Send<double>(-alpha);
 
-                    if abs(alpha) < er and abs(theta) < er:
-                        stand_run = True
-                    
-                    voltage = 0
-                    # write commands
-                    myQube.write_voltage(voltage)
+            voltage = tcsp.Recv<double>();
 
-                    print(f"control start: {stand_run}")
-                else:
-                    # running signal send for controller
-                    tcsp.send("run")
-    
-                    # read sensor information
-                    myQube.read_outputs()
-    
-                    # calc output
-                    theta = myQube.motorPosition * -1
-                    alpha_f =  myQube.pendulumPosition
-                    alpha = np.mod(alpha_f, 2*np.pi) - np.pi
-                    alpha_deg = alpha * 180 / np.pi
-    
-                    # send plant output
-                    tcsp.send(-theta)
-                    tcsp.send(-alpha)
-    
-                    # get control input
-                    _, u = tcsp.recv()
-    
-                    # running range set
-                    if abs(alpha_deg) < 15:
-                        voltage = u
-                    else:
-                        voltage = 0
-    
-                    # write commands
-                    voltage = np.clip(voltage, -15, 15)
-                    myQube.write_voltage(voltage)
+            cout << "---------------------------------------------" << endl;
+            cout << "pendulum angle: " << alpha << endl;
+            cout << "base angle: " << theta << endl;
+            cout << "control input: " << voltage << endl;
 
-                # plot to scopes
-                count += 1
-                if count >= countMax:
-                    scopePendulum.sample(timeStamp, [-alpha])
-                    scopeBase.sample(timeStamp, [-theta])
-                    scopeVoltage.sample(timeStamp,[voltage])
-                    count = 0
+            if (abs(voltage) > 15 || abs(alpha_deg) > 15)
+            {
+                voltage = 0;
+            }
+        }
 
-                timeStamp = elapsed_time()
 
-            tcsp.send("end")
+        // actuator write
+        hil_write_analog(board, analog_channels, 1, &voltage);
 
-def main():
-    thread = Thread(target=control_loop)
-    thread.start()
+        edc = chrono::high_resolution_clock::now();
+        duration = chrono::duration_cast<chrono::nanoseconds>(edc - stc);
+        run_time = duration.count() / 1000000;
+        stack_time += run_time / 1000;
+        cout << "iter: " << i << " | loop time: " << run_time << "ms | total time: " << stack_time << "s" << endl;
+    }
 
-    while thread.is_alive() and (not KILL_THREAD):
+    tcsp.Send<string>("end");
 
-        # This must be called regularly or the scope windows will freeze
-        # Must be called in the main thread.
-        Scope.refreshAll()
-        time.sleep(0.01)
+    // logic terminate
+    voltage = 0.0;
+    hil_write_analog(board, analog_channels, 1, &voltage);
+    digital_values[0] = 0;
+    hil_write_digital(board, digital_channels, 1, digital_values);
+    if (board != NULL)
+    {
+        hil_close(board);
+    }
 
-    input('Press the enter key to exit.')
-
-if __name__ == "__main__":
-    main()
+    return 0;
+}
