@@ -73,7 +73,8 @@ int main()
 
         // calc output
         theta = -angle[0];
-        alpha = fmod(angle[1], 2.0 * M_PI) - M_PI;
+        alpha = angle[1] - (long)(angle / (2 * M_PI)) * (2 * M_PI);
+        if(alpha < 0) alpha += 2 * M_PI
         alpha_deg = alpha * 180 / M_PI;
 
         if (!stand_run)
