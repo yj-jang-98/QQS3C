@@ -221,7 +221,7 @@ If not, you should refer to the above version and install it.
 1. Install Visual Studio and QLab(according to the above content).
 2. Make a new project.
 3. Put the file plant.cpp, which is located in "interface/plant/cpp/hardware", to source file section.
-4. Put the file tcp_protocol_server_windwos.h, which is located in "communication/cpp", to header file section.
+4. Put the file tcp_protocol_server_windows.h, which is located in "communication/cpp", to header file section.
 5. Enter project configuration, that is located project->Properties, Change C++ Language Standard C++17 (maybe it was C++14)
 6. Find the address of "Quanser SDK/include" and paste on C/C++->Additional Include Directories section. (maybe there's a Quanser SDK in the Quanser folder in Program Files, or there's a QUARC in it)
 7. Find the address of "Quanser SDK/lib" and paste on Linker->General->Additional Library Directories section.
@@ -230,6 +230,10 @@ If not, you should refer to the above version and install it.
 #### Using only Windows
 ##### Windows environment
 This is exactly the same as the Windows setting in the WSL and Windows description, and of course, the OPTION part. But I can't use OpenFHE-python wrapper here.
+
+**OPTION 3** If you want to use "communication/cpp" in Windows
+1. Open Visual Studio.
+2. Put the file tcp_protocol_client_windows.h, which is located in "communication/cpp", to header file section.
 
 ### Ready to operate
 There are two different executions in each environment.
