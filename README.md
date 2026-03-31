@@ -1,25 +1,3 @@
-# Notice
-The library is now updating. The branch is up to date and the final deadline for its verification is by ~~March~~ April, 2026.
-
-## Advance(latest version) of encrypted control
-If you want to see latest version of encrypted control advance example, you can refer to [Encrypted Control Advanced](https://github.com/lsw23101/Encrypted_Quanser) repository, which is made by Sangwon Lee who is contributor of this library.
-
-## Development schedule
-This branch is version of added C++ and Go server code, and separate encrypted controller to other computer.
-
-1. Add C++ and Go version TCP server code. (✅ 2026-02-05 clear, communication folder)
-2. Initially launch swing-up for pendulum inverting. (✅ 2026-03-09 clear(modified energy based new video update), interface/plant/py/hardware/plant_with_swing_up.py, [demonstration video hyperlink with ctrl_arx_enc.cpp](https://youtu.be/IPi5QwssUeg))
-3. Model information change (as motor registence 8.4 to 7.5) (✅ 2026-02-13 clear, modified all controller and plant model)
-4. Add Quarc C based hard real-time model code. (✅ 2026-03-31 clear, you can use with serval setting for running quanser on visual studio) ~~(delayed by needs of windows version tcp communication which not is predicted) [75% done/windows tcp server/client(c++) code now available with Visual Studio environment]~~
-5. ~~Separate encrypted controller code~~ Readme update. (✅ 2026-03-24 clear)
-6. Add Rust support.
-7. Add ARX only RLWE cryptography on Rust.
-
-Schedule's deadline are ~~02-13~~, ~~02-13~~, ~~02-13~~, 03-31(delayed), ~~N/D~~, 04-10(delayed), 04-17(delayed), respectively. (month-day format) 
-All contents will be done at least before end of April. 
-
-Sorry for delay 😢
-
 # QQS3C
 QQS3C provides the drive code for encrypted control for the Quanser Qube Servo 3 model. 
 The code transforms dynamic controllers through various methods and then drives the system through homomorphic encryption. 
@@ -116,16 +94,20 @@ Please refer to the link [WSL installation method](https://learn.microsoft.com/k
 
 This requires three essential elements:
 
-1. Go version 1.25.1 or later (only install in WSL)
-2. C++ 20 compiler or later (only install in WSL)
-3. Python 3.12 or later (install both Windows, WSL)
+1. Go version 1.25.1 or later
+2. C++ 17 compiler or later
+3. Python 3.12 or later
    
 at least. (The following description is after installing the above three elements)
 
 If WSL is installed, the appropriate Linux OS is Ubuntu-24.04 LTS version.
 
 ### Settings for operation
-#### WSL environment
+There exist two way to use this library. One is using both Windows and WSL environment, The other is using only Windows environment.
+This section introduce setting method of both side.
+
+#### Using Windows and WSL
+##### WSL environment
 Assuming you have Python and Go installed.
 If not, you should refer to the above version and install it.
 
@@ -150,10 +132,92 @@ If not, you should refer to the above version and install it.
      ``` bash
        pip install numpy matplotlib control openfhe
      ```
-3. Lattigo installation
+3. Link complier and interpreter of communication tools
+   * First, move directory to root folder.
+     ``` bash
+       cd QQS3C
+     ```
+   * Find absolute directory address and memorize this.
+     ``` bash
+       pwd
+     ```
+   * Change the address above to *** below. (C++ Link)
+     ``` bash
+       export CPATH=$CPATH:***/communication/cpp
+     ```
+   * And with same address, change to below.
+     ``` bash
+       pip install -e "***/communication/py"
+     ```
+4. Lattigo installation
    * This is automatically handled by go mod tidy, so no preparation is required.
      
-#### Windows environment
+##### Windows environment
+1. You need to download the code via git clone on PowerShell page.
+   ``` powershell
+     git clone "https://github.com/RFA0608/QQS3C.git"
+   ```
+2. Execute the following task in Windows PowerShell.
+   * Navigate to the downloaded directory.
+     ``` powershell
+       cd QQS3C
+     ```
+   * Activate Python's virtual environment.
+     ``` powershell
+       py -3 -m venv venv
+       .\venv\Scripts\Activate.ps1
+     ```
+     or
+     ``` powershell
+       python3 -m venv venv
+       .\venv\Scripts\Activate.ps1
+     ```
+     (If the above doesn't work, try the one below.)
+     
+     If the command doesn't work, try again by following these steps:
+       1. Launch PowerShell as administrator.
+       2. Set execution policy
+          ``` powershell
+            Set-ExecutionPolicy RemoteSigned
+          ```
+       3. Turn off the administrator PowerShell, open a standard (non-administrator) PowerShell, and try the command again.
+   * Download all required packages using pip.
+     ``` powershell
+       pip install numpy matplotlib control openfhe PyQt6 pyqtgraph
+     ```
+3. Link interpreter
+   * First, move directory to root folder.
+     ``` powershell
+       cd QQS3C
+     ```
+   * Find absolute directory address and memorize this.
+     ``` powershell
+       pwd
+     ```
+   * Change the address above to *** below.
+     ``` powershell
+       pip install -e "***/communication/py"
+     ```
+5. You need to check the hyper-v ip for TCP/IP communication between the Windows and WSL.
+   ``` powershell
+     ipconfig
+   ```
+   Save IPv4 address of vEthernet (WSL (Hyper-V...)).
+   
+**OPTION** if you want to use Ouanser Interactive Labs(QLab), additionally follows below.
+1. Enter the url [portal_quanser](https://portal.quanser.com/Downloads), find 'these instructions' in "For Python users" section, and find 'Get Started' in "Design Philosophy" section.
+2. Download and install Quanser Interactive Labs to click 'Windows' in "Attention" section.
+3. Download and install SDK to click 'Download Quanser SDK for Windows' in "Attention Windows" section.
+4. If you do not touch any option during installing, you can find 'quanser_api' word in "Program Files/Quanser/Quanser SDK/python" path. Just check this file.
+5. Enter the url [quanser](https://github.com/quanser/Quanser_Academic_Resources), download library(whole things) and unzip proper path(like document).
+6. In the QQS3C "interaction/plant/py/hardware", the top side, "sys.path.append(r"-")" change the path "-" to the path set in step 5.
+7. Make sure venv is on, write
+  ``` powershell
+    python -m pip install --upgrade --find-links "C:\Program Files\Quanser\Quanser SDK\python" "C:\Program Files\Quanser\Quanser SDK\python\quanser_api-2025.11.1-py2.py3-none-any.whl"
+  ```
+  on the terminal and connect the SDK (this path can find in step 4).
+#### Using only Windows
+##### Windows environment
 1. You need to download the code via git clone on PowerShell page.
    ``` powershell
      git clone "https://github.com/RFA0608/QQS3C.git"
@@ -295,7 +359,6 @@ If you ran a Quanser Interactive Labs, you can see movement on QLabs.
 
 If you are running real hardware, there is two side of launch, first is manually raise the pendulum(use "plant.py" code), second automatically swing up the pendulum(use "plant_with_swing_up.py"), so that control start is True while looking at the output of the debugger (vscode) running in the Windows environment.
 One thing to note is that for it to work, both the pendulum and the base must be near the equilibrium point.
-
 ---
 
 ## Demonstration
