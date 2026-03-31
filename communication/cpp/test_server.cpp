@@ -8,22 +8,22 @@ const int port = 9999;
 
 int main()
 {
-    tcp_server tccp = tcp_server(host, port);
+    tcp_server tcsp = tcp_server(host, port);
 
-    tccp.Send<int>(60207);
+    tcsp.Send<int>(60207);
 
-    int i = tccp.Recv<int>();
+    int i = tcsp.Recv<int>();
     cout << "recv : " << i << endl;
 
 
-    tccp.Send<double>(60.207);
+    tcsp.Send<double>(60.207);
 
-    double f = tccp.Recv<double>();
+    double f = tcsp.Recv<double>();
     cout << "recv : " << f << endl;
 
     
-    tccp.Send<string>("60-207");
+    tcsp.Send<string>("60-207");
 
-    string s = tccp.Recv<string>();
+    string s = tcsp.Recv<string>();
     cout << "recv : " << s << endl;
 }
