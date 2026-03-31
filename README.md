@@ -211,7 +211,7 @@ If not, you should refer to the above version and install it.
 4. If you do not touch any option during installing, you can find 'quanser_api' word in "Program Files/Quanser/Quanser SDK/python" path. Just check this file.
 5. Enter the url [quanser](https://github.com/quanser/Quanser_Academic_Resources), download library(whole things) and unzip proper path(like document).
 6. In the QQS3C "interaction/plant/py/hardware", the top side, "sys.path.append(r"-")" change the path "-" to the path set in step 5.
-7. Make sure venv is on, write
+7. Make sure venv is on, write (**VERY IMPORTANT**)
   ``` powershell
     python -m pip install --upgrade --find-links "C:\Program Files\Quanser\Quanser SDK\python" "C:\Program Files\Quanser\Quanser SDK\python\quanser_api-2025.11.1-py2.py3-none-any.whl"
   ```
