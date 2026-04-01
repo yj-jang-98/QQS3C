@@ -322,7 +322,7 @@ This completes the plant's preparation for operation.
 ### Operation
 Proceed in the following order.
 1. Press F5, which is waiting for Windows environment.
-2. Press F5 or enter to launch the controller that was waiting in WSL.
+2. Press F5 or enter to launch the controller that was waiting in WSL (or Windows).
 
 If you ran a simulation, a graph of the output will appear in the file "plant output as sim.png" in "interface/plant/py/simulation/result" folder.
 
