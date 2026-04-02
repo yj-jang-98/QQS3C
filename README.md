@@ -5,7 +5,7 @@ The cryptographic libraries for computational homomorphism use [Microsoft SEAL](
 
 ---
 
-## Implementation Direction
+## Implementation direction
 The code was implemented through data communication with the Quanser API via TCP/IP in order to use Microsoft's SEAL, a C++ based homomorphic encryption library that can be operated, lattigo (CDSL) written in Go, and openFHE-python that can be run in a Linux environment, since the Quanser hardware API is provided only for Python and runs in a Windows environment.
 
 ---
@@ -16,10 +16,14 @@ The interfacing code for the Python simulator and the actual hardware, correspon
 The actual device consists of a single file, "plant.py" in "interface/plant/py/hardware", while the simulator consists of "model.py" and "plant.py" in "interface/plant/py/simulation".
 **Code explanation and technical interpretation can be found at the link [QQS3C-obsidian](https://publish.obsidian.md/qqs3c)**
 
-### Python version controller
-You can check the "ctrl_*.py" controller file, which is written in Python, ll_state_feedbin the "interface/controller/py" folder of the code.
+### Controller description
+You can check the "ctrl_*.py" controller file, which is written in Python, in the "interface/controller/py" folder of the code.
 They are implemented in five technically different forms, which are named by state_filter, full_state_feedback, observer_form, arx_model, integer_matrix, respectively.
 In each folder, both "model.py" and "model_enc.py" are files that implement objects for controller and encrypted control.
+There are also C++ and Go versions of cryptographic controllers for faster and more appropriate cryptographic techniques. 
+you can find "interface/controller/C++/arx_model" and "interface/controller/go/integer_matrix".
+They are in order a version implemented in Python as Microsoft SEAL C++ by arx_model and a version implemented in Lattigo (CDSL) by integer_matrix.
+
 
 **Controller Compatibility Matrix**
 
