@@ -23,35 +23,14 @@ In each folder, both "model.py" and "model_enc.py" are files that implement obje
 
 ### Controller Compatibility Matrix
 
-| Model | Language | Encryption | Security (128-bit) | Status |
-| :--- | :---: | :---: | :---: | :--- |
-| **state_filter(d/dt filter)** | Python | - | - | **Not Available** |
-| **full_state_feedback** | Python | BGV (OpenFHE-python) | △ | Available |
-| **observer_form** | Python | BGV (OpenFHE-python) | × | **Not Available** |
-| **arx_model** | Python/C++ | BGV (OpenFHE-python/SEAL) | ◎ | Available |
-| **integer_matrix** | Python/Go | Lattigo | △ | Available |
+| Model | Language | Encryption | Security (128-bit) | Status | Series |
+| :--- | :---: | :---: | :---: | :--- | :--- |
+| **state_filter(d/dt filter)** | Python | - | - | **Not Available** | nomial |
+| **full_state_feedback** | Python | BGV (OpenFHE-python) | △ | Available | nomial, quantized(_q), encrpyted(_enc) |
+| **observer_form** | Python | BGV (OpenFHE-python) | × | **Not Available** | nomial, quantized(_q) |
+| **arx_model** | Python/C++ | BGV (OpenFHE-python/SEAL) | ◎ | Available | nomial, quantized(_q), encrypted(_enc) |
+| **integer_matrix** | Python/Go | Lattigo | △ | Available | nomial, quantized(_q), encrypted(_enc) |
 
-
-### C++ version controller
-You can check the "ctrl_arx_enc.cpp" controller file, which is written in C++, in the "interface/controller/cpp/arx_model/" folder of the code.
-In cpp, only the encrypted controller of "ctrl_arx_q.py" provided in Python is provided.
-"model_enc.h" contains an object of the encrypted controller.
-
-1. **arx_model**:Using ARX:
-   * ctrl_arx_enc.cpp
-     
-     ↳ Unlike "ctrl_arx_enc.py" provided by Python, "ctrl_arx_enc.cpp" is encrypted using Microsoft SEAL. This allows for slightly faster sampling times.
-
-### Go version controller
-You can check the "ctrl_intmat_enc.go" controller file, which is written in Go, in the "interface/controller/go/integer_matrix/" folder of the code.
-In go, only "ctrl_intmat_enc.go", which is an encrypted file of "ctrl_intmat_q.py" provided by Python, is provided.
-"model_enc.go" contains a function of the encrypted controller.
-
-1. **integer_matrix**:Using integer matrix:
-   * ctrl_intmat_enc.go
-     
-     ↳ "ctrl_intmat_enc.go" is an encrypted version of "ctrl_intmat_q.py". (An equivalent encrypted controller was not provided in Python.)
-    
 --- 
 
 ## How to use
