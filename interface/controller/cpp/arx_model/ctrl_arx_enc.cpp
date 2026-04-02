@@ -3,6 +3,7 @@
 
 // get other tools
 #include <iostream>
+// #include <cstdint> //if use Windows environment, then active this.
 #include <string>
 #include <chrono>
 using namespace std;
