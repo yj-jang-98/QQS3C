@@ -71,6 +71,7 @@ at least. (The following description is after installing the above three element
 
 If WSL is installed, the appropriate Linux OS is Ubuntu-24.04 LTS version. 
 
+### Install and operate
 You can find Installation guide in [**QQS3C-obsidian > Installation guide**](https://publish.obsidian.md/qqs3c/%EB%9D%BC%EC%9D%B4%EB%B8%8C%EB%9F%AC%EB%A6%AC/QQS3C/Introduction/Installation+guide?). The installation method is **quite tricky**, so please refer to it.
 1. Only Windows users refer to
    [QQS3C-obsidian > Using Windows only](https://publish.obsidian.md/qqs3c/%EB%9D%BC%EC%9D%B4%EB%B8%8C%EB%9F%AC%EB%A6%AC/QQS3C/Introduction/Using+Windows+only?)
