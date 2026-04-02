@@ -243,7 +243,7 @@ All python implementation need to apply on venv environment. (you can check (ven
     pip install -e ***
   ```
 
-**OPTION 1** If you want to use QUARC-C based plant code (more suitable real-time interaction than python), need more setting on Visual Studio(VS 2022)
+**OPTION 1**: If you want to use QUARC-C based plant code (more suitable real-time interaction than python), need more setting on Visual Studio(VS 2022)
 1. Install Visual Studio and QLab(according to the above content).
 2. Make a new project.
 3. Put the file plant.cpp, which is located in "interface/plant/cpp/hardware", to source file section.
@@ -257,7 +257,7 @@ All python implementation need to apply on venv environment. (you can check (ven
 ##### Windows environment
 This is exactly the same as the Windows setting in the WSL and Windows description, and of course, the OPTION part. But I can't use OpenFHE-python wrapper here.
 
-**OPTION 2** If you want to use "communication/cpp" in Windows
+**OPTION 2**: If you want to use "communication/cpp" in Windows
 1. Open Visual Studio.
 2. Put the file tcp_protocol_client_windows.h, which is located in "communication/cpp", to header file section.
 
