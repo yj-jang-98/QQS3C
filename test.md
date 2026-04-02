@@ -5,7 +5,7 @@ The cryptographic libraries for computational homomorphism use [Microsoft SEAL](
 
 ---
 
-## Implementation direction
+#### Implementation direction
 The code was implemented through data communication with the Quanser API via TCP/IP in order to use Microsoft's SEAL, a C++ based homomorphic encryption library that can be operated, lattigo (CDSL) written in Go, and openFHE-python that can be run in a Linux environment, since the Quanser hardware API is provided only for Python and runs in a Windows environment. (Windows-only version also works)
 
 ``` mermaid
@@ -25,13 +25,13 @@ graph LR
 
 ---
 
-## Features
+#### Features
 The code implements controller versions in Python, C++, and Go.
 The interfacing code for the Python simulator and the actual hardware, corresponding to each controller, can be found in the "interface/plant" directory.
 The actual device consists of a single file, "plant.py" in "interface/plant/py/hardware", while the simulator consists of "model.py" and "plant.py" in "interface/plant/py/simulation".
 **Code explanation and technical interpretation can be found at the link [QQS3C-obsidian](https://publish.obsidian.md/qqs3c)**
 
-### Controller description
+#### Controller description
 You can check the "ctrl_*.py" controller file, which is written in Python, in the "interface/controller/py" folder of the code.
 They are implemented in five technically different forms, which are named by state_filter, full_state_feedback, observer_form, arx_model, integer_matrix, respectively.
 In each folder, both "model.py" and "model_enc.py" are files that implement objects for controller and encrypted control.
@@ -57,7 +57,7 @@ Note: Nominal refers to the controller as designed, '_q' is the quantized versio
 # How to use
 It explains the preparations before use, how to use the simulation file, how to use the Ouanser Interactive Labs, and how to use the actual hardware.
 
-## Before using
+#### Before using
 This project supports both Windows and WSL environments. (Note: The OpenFHE-python wrapper is unavailable in a Windows-only setup, and additional configuration is required)
 Please refer to the link [WSL installation method](https://learn.microsoft.com/ko-kr/windows/wsl/install) for instructions on installing WSL.
 
@@ -71,12 +71,8 @@ at least. (The following description is after installing the above three element
 
 If WSL is installed, the appropriate Linux OS is Ubuntu-24.04 LTS version. 
 
-## Settings for operation
-There exist two way to use this library. One is using both Windows and WSL environment, The other is using only Windows environment.
-This section introduce setting method of both side.
-
-### Using Windows and WSL
-#### WSL environment
+# Using Windows and WSL
+## WSL environment
 Assuming you have Python and Go installed.
 If not, you should refer to the above version and install it.
 
@@ -121,7 +117,7 @@ If not, you should refer to the above version and install it.
 4. Lattigo installation
    * This is automatically handled by go mod tidy, so no preparation is required.
      
-#### Windows environment
+## Windows environment
 1. You need to download the code via git clone on PowerShell page.
    ``` powershell
      git clone "https://github.com/RFA0608/QQS3C.git"
