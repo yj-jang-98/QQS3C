@@ -216,7 +216,7 @@ This is exactly the same as the Windows setting in the WSL and Windows descripti
 2. Put the file tcp_protocol_client_windows.h, which is located in "communication/cpp", to header file section.
 
 ### Ready to operate
-There are two different executions in each environment.
+Execution methods vary depending on the environment.
 
 #### WSL environment
 1. Go to the previously downloaded QQS3C folder location and run the debugger (vscode) to write below.
@@ -298,7 +298,7 @@ This completes the controller's preparation for operation.
 
 This completes the plant's preparation for operation.
 
-**Additional Guide** Method Using SEAL On Windows
+**Additional Guide**: Setting up Microsoft SEAL on Windows via vcpkg
 1. Install vcpkg.
    ``` powershell
      git clone https://github.com/microsoft/vcpkg.git
