@@ -1,5 +1,6 @@
 #define _USE_MATH_DEFINES
 #include <iostream>
+#include <cstdint>
 #include <string>
 #include <cmath>
 #include <chrono>
@@ -75,7 +76,7 @@ int main()
     double stack_time = 0.0;
 
     // control loop
-    for (long long i = 0; i < (long long)((double)simulation_time / sample_time); i++)
+    for (int64_t i = 0; i < (int64_t)((double)simulation_time / sample_time); i++)
     {
         stc = chrono::high_resolution_clock::now();
 
