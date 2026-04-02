@@ -106,12 +106,11 @@ And next is Quanser requirement on Windows. You need to installation Quanser's a
 
 This requires two essential settings:
 
-1. Installation Quanser SDK
-2. Installation Quanser library
+#### Installation Quanser SDK
  
-**1** if you want to use Ouanser Interactive Labs(QLab), additionally follows below.
+**1** if you want to use Ouanser Interactive Labs(QLab) or Quanser Hardware, follows below.
 1. Enter the url [portal_quanser](https://portal.quanser.com/Downloads), find 'these instructions' in "For Python users" section, and find 'Get Started' in "Design Philosophy" section.
-2. Download and install Quanser Interactive Labs to click 'Windows' in "Attention" section.
+2. (**Only QLab/Not need hardware users**)Download and install Quanser Interactive Labs to click 'Windows' in "Attention" section.
 3. Download and install SDK to click 'Download Quanser SDK for Windows' in "Attention Windows" section.
 4. If you do not touch any option during installing, you can find 'quanser_api' word in "Program Files/Quanser/Quanser SDK/python" path. Just check this file.
 5. Enter the url [quanser](https://github.com/quanser/Quanser_Academic_Resources), download library(whole things) and unzip proper path(like document).
@@ -121,6 +120,8 @@ This requires two essential settings:
     python -m pip install --upgrade --find-links "C:\Program Files\Quanser\Quanser SDK\python" "C:\Program Files\Quanser\Quanser SDK\python\quanser_api-2025.11.1-py2.py3-none-any.whl"
   ```
   on the terminal and connect the SDK (this path can find in step 4).
+
+#### Installation Quanser library
 
 ### Settings for operation
 There exist two way to use this library. One is using both Windows and WSL environment, The other is using only Windows environment.
