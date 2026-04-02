@@ -21,6 +21,12 @@ You can check the "ctrl_*.py" controller file, which is written in Python, ll_st
 They are implemented in five technically different forms, which are named by state_filter, full_state_feedback, observer_form, arx_model, integer_matrix, respectively.
 In each folder, both "model.py" and "model_enc.py" are files that implement objects for controller and encrypted control.
 
+Controller Type,Python,C++ (SEAL),Go (Lattigo),Description
+State Filter,△,-,-,Not available
+Full State Feedback,○,-,-,BGV (OpenFHE)
+ARX Model,○,○,-,128-bit Security (SEAL)
+Integer Matrix,○,-,○,Lattigo Implementation
+
 1. **state_filter**:Using d/dt filter:
    * ctrl_sf.py
      
