@@ -78,7 +78,7 @@ You can find Installation guide in [**QQS3C-obsidian > Installation guide**](htt
 2. Both Windows and WSL users refer to
    [QQS3C-obsidian > Using both Windows and WSL](https://publish.obsidian.md/qqs3c/%EB%9D%BC%EC%9D%B4%EB%B8%8C%EB%9F%AC%EB%A6%AC/QQS3C/Introduction/Using+both+Windows+and+WSL?)
 
-### Change code to your derive
+### Change to your code
 The library tried to maintain consistency of the code while creating it. See link [QQS3C-obsidian > Controller modification](https://publish.obsidian.md/qqs3c/%EB%9D%BC%EC%9D%B4%EB%B8%8C%EB%9F%AC%EB%A6%AC/QQS3C/Implementation/Controller+modification?) for a description of it.
 
 ---
