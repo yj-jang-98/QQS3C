@@ -327,7 +327,7 @@ This completes the plant's preparation for operation.
 3. Put `ii. ` on CLI and find folder "vcpkg".
 4. Enter vcpkg->installed->x64-windows->include, and Check "seal" folder.
    * If there is no folder name "seal" maybe you can find like "SEAL-4.1". enter that and move "seal" folder into "include" folder.
-5. Onpen Visual Studio.
+5. Open Visual Studio.
 6. Change project type debug to release.
 7. Enter project configuration, that is located project->Properties, Change C++ Language Standard C++17 (maybe it was C++14)
 8. In section Configuration Properties, you can find vcpkg->Use Vcpkg/Install Vcpkg Dependencies and check type is Yes. (If are not, change Yes)
