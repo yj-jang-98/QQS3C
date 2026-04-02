@@ -1,4 +1,5 @@
 #include "seal/seal.h"
+// #include <cstdint> //if use Windows environment, then active this.
 #include <vector>
 using namespace seal;
 using namespace std;
