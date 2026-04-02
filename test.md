@@ -73,11 +73,6 @@ If WSL is installed, the appropriate Linux OS is Ubuntu-24.04 LTS version.
 
 
 
-
-
-
-# Using Windows and WSL
-
 ## Windows environment
 1. You need to download the code via git clone on PowerShell page.
    ``` powershell
