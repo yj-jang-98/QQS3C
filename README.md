@@ -102,46 +102,6 @@ at least. (The following description is after installing the above three element
 
 If WSL is installed, the appropriate Linux OS is Ubuntu-24.04 LTS version. 
 
-And next is Quanser requirement on Windows. You need to installation Quanser's api and library to use this code. 
-
-This requires two essential settings:
-
-#### Installation Quanser SDK
-If you want to use Ouanser Interactive Labs(QLab) or Quanser Hardwares, follows below.
-1. Enter the url [portal_quanser](https://portal.quanser.com/Downloads), find 'these instructions' in "For Python users" section, and find 'Get Started' in "Design Philosophy" section.
-2. (**Only QLab/Not need hardware users**)Download and install Quanser Interactive Labs to click 'Windows' in "Attention" section.
-3. Download and install SDK to click 'Download Quanser SDK for Windows' in "Attention Windows" section.
-4. If you do not touch any option during installing, you can find 'quanser_api' word in "Program Files/Quanser/Quanser SDK/python" path. Just check this file.
-5. Enter the url [quanser](https://github.com/quanser/Quanser_Academic_Resources), download library(whole things) and unzip proper path(like document).
-6. In the QQS3C "interaction/plant/py/hardware", activate venv which is python virtual enviroment.
-7. Make sure venv is on, write (**VERY IMPORTANT: Anything on Quanser requires this, so it must be installed**)
-  ``` powershell
-    python -m pip install --upgrade --find-links "C:\Program Files\Quanser\Quanser SDK\python" "C:\Program Files\Quanser\Quanser SDK\python\quanser_api-2025.11.1-py2.py3-none-any.whl"
-  ```
-  on the terminal and connect the SDK (this path can find in step 4).
-
-#### Installation Quanser library
-All python implementation need to apply on venv environment. (you can check (venv) word on left of your CLI area)
-1. For easy to use Quanser's python library, you can make file `pyproject.toml` on 0_libraries->python in Quanser Academic Resources, which is before we downloaded, for pip installation.
-2. Fill a text on `pyproject.toml` like below (Just copy and paste)
-```
-  [build-system]
-  requires = ["setuptools", "wheel"]
-  build-backend = "setuptools.build_meta"
-  
-  [project]
-  name = "quanser-pal"
-  version = "0.1.0"
-  description = "Quanser PAL lib"
-  
-  [tool.setuptools]
-  packages = ["pal"]
-```
-3. Find absolute address location `pyproject.toml`
-4. Be careful that your environment is on venv, put the command below (change *** to address what we found step 3)
-  ```
-    pip install -e ***
-  ```
 ### Settings for operation
 There exist two way to use this library. One is using both Windows and WSL environment, The other is using only Windows environment.
 This section introduce setting method of both side.
@@ -238,14 +198,52 @@ If not, you should refer to the above version and install it.
      ``` powershell
        pip install -e "***/communication/py"
      ```
-   * **In OPTION 1's step 7, you have to do.**
 5. You need to check the hyper-v ip for TCP/IP communication between the Windows and WSL.
    ``` powershell
      ipconfig
    ```
    Save IPv4 address of vEthernet (WSL (Hyper-V...)).
 
-**OPTION 2** If you want to use QUARC-C based plant code (more suitable real-time interaction than python), need more setting on Visual Studio(VS 2022)
+###### This requires two essential settings:
+
+**Installation Quanser SDK**
+If you want to use Ouanser Interactive Labs(QLab) or Quanser Hardwares, follows below.
+1. Enter the url [portal_quanser](https://portal.quanser.com/Downloads), find 'these instructions' in "For Python users" section, and find 'Get Started' in "Design Philosophy" section.
+2. (**Only QLab/Not need hardware users**)Download and install Quanser Interactive Labs to click 'Windows' in "Attention" section.
+3. Download and install SDK to click 'Download Quanser SDK for Windows' in "Attention Windows" section.
+4. If you do not touch any option during installing, you can find 'quanser_api' word in "Program Files/Quanser/Quanser SDK/python" path. Just check this file.
+5. Enter the url [quanser](https://github.com/quanser/Quanser_Academic_Resources), download library(whole things) and unzip proper path(like document).
+6. In the QQS3C "interaction/plant/py/hardware", activate venv which is python virtual enviroment.
+7. Make sure venv is on, write (**VERY IMPORTANT: Anything on Quanser requires this, so it must be installed**)
+  ``` powershell
+    python -m pip install --upgrade --find-links "C:\Program Files\Quanser\Quanser SDK\python" "C:\Program Files\Quanser\Quanser SDK\python\quanser_api-2025.11.1-py2.py3-none-any.whl"
+  ```
+  on the terminal and connect the SDK (this path can find in step 4).
+
+**Installation Quanser library**
+All python implementation need to apply on venv environment. (you can check (venv) word on left of your CLI area)
+1. For easy to use Quanser's python library, you can make file `pyproject.toml` on 0_libraries->python in Quanser Academic Resources, which is before we downloaded, for pip installation.
+2. Fill a text on `pyproject.toml` like below (Just copy and paste)
+```
+  [build-system]
+  requires = ["setuptools", "wheel"]
+  build-backend = "setuptools.build_meta"
+  
+  [project]
+  name = "quanser-pal"
+  version = "0.1.0"
+  description = "Quanser PAL lib"
+  
+  [tool.setuptools]
+  packages = ["pal"]
+```
+3. Find absolute address location `pyproject.toml`
+4. Be careful that your environment is on venv, put the command below (change *** to address what we found step 3)
+  ```
+    pip install -e ***
+  ```
+
+**OPTION 1** If you want to use QUARC-C based plant code (more suitable real-time interaction than python), need more setting on Visual Studio(VS 2022)
 1. Install Visual Studio and QLab(according to the above content).
 2. Make a new project.
 3. Put the file plant.cpp, which is located in "interface/plant/cpp/hardware", to source file section.
@@ -259,7 +257,7 @@ If not, you should refer to the above version and install it.
 ##### Windows environment
 This is exactly the same as the Windows setting in the WSL and Windows description, and of course, the OPTION part. But I can't use OpenFHE-python wrapper here.
 
-**OPTION 3** If you want to use "communication/cpp" in Windows
+**OPTION 2** If you want to use "communication/cpp" in Windows
 1. Open Visual Studio.
 2. Put the file tcp_protocol_client_windows.h, which is located in "communication/cpp", to header file section.
 
