@@ -100,7 +100,9 @@ This requires three essential elements:
    
 at least. (The following description is after installing the above three elements)
 
-If WSL is installed, the appropriate Linux OS is Ubuntu-24.04 LTS version.
+If WSL is installed, the appropriate Linux OS is Ubuntu-24.04 LTS version. 
+
+And next is Quanser requirement on Windows. You need to installation Quanser's api and library to use this code. 
 
 ### Settings for operation
 There exist two way to use this library. One is using both Windows and WSL environment, The other is using only Windows environment.
