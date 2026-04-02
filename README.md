@@ -41,7 +41,7 @@ They are in order a version implemented in Python as Microsoft SEAL C++ by arx_m
 It explains the preparations before use, how to use the simulation file, how to use the Ouanser Interactive Labs, and how to use the actual hardware.
 
 ### Before using
-This code should work for both Windows and WSL (Windows Subsystem for Linux) environments.(**If you want to use only Windows environment, then only can't use OpenFHE-python wrapper and needs more several setting**)
+This project supports both Windows and WSL environments. Note: The OpenFHE-python wrapper is unavailable in a Windows-only setup, and additional configuration is required.
 Please refer to the link [WSL installation method](https://learn.microsoft.com/ko-kr/windows/wsl/install) for instructions on installing WSL.
 
 This requires three essential elements:
@@ -323,7 +323,7 @@ If you ran a simulation, a graph of the output will appear in the file "plant ou
 If you ran a Quanser Interactive Labs, you can see movement on QLabs.
 
 If you are running real hardware, there is two side of launch, first is manually raise the pendulum(use "plant.py" code), second automatically swing up the pendulum(use "plant_with_swing_up.py"), so that control start is True while looking at the output of the debugger (vscode) running in the Windows environment.
-One thing to note is that for it to work, both the pendulum and the base must be near the equilibrium point.
+Note: For successful control initialization, both the pendulum and the base must be positioned near the equilibrium point.
 
 ---
 
