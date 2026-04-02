@@ -107,7 +107,7 @@ And next is Quanser requirement on Windows. You need to installation Quanser's a
 This requires two essential settings:
 
 #### Installation Quanser SDK
-If you want to use Ouanser Interactive Labs(QLab) or Quanser Hardware, follows below.
+If you want to use Ouanser Interactive Labs(QLab) or Quanser Hardwares, follows below.
 1. Enter the url [portal_quanser](https://portal.quanser.com/Downloads), find 'these instructions' in "For Python users" section, and find 'Get Started' in "Design Philosophy" section.
 2. (**Only QLab/Not need hardware users**)Download and install Quanser Interactive Labs to click 'Windows' in "Attention" section.
 3. Download and install SDK to click 'Download Quanser SDK for Windows' in "Attention Windows" section.
