@@ -33,7 +33,7 @@ They are in order a version implemented in Python as Microsoft SEAL C++ by arx_m
 | **full_state_feedback** | Python | BGV (OpenFHE-python) | △ | Available | nomial, quantized(_q), encrpyted(_enc) | Ⅹ |
 | **observer_form** | Python | BGV (OpenFHE-python) | Ⅹ | **Not Available** | nomial, quantized(_q) | Ⅹ | 
 | **arx_model** | Python/C++ | BGV (OpenFHE-python/SEAL) | ◎ | Available | nomial, quantized(_q), encrypted(_enc) | encrypted(_enc, C++) |
-| **integer_matrix** | Python/Go | RGSW (Lattigo) | △ | Available | nomial, quantized(_q), encrypted(_enc) | encrypted(_enc, Go) |
+| **integer_matrix** | Python/Go | RGSW (CDSL Lattigo) | △ | Available | nomial, quantized(_q), encrypted(_enc) | encrypted(_enc, Go) |
 
 --- 
 
