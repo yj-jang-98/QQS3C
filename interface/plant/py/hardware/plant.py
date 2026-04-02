@@ -1,4 +1,3 @@
-# get quanser interface lib and tcp_protocol description (vscode[debuger] launched at root directory)
 import sys
 sys.path.append(r"C:\Quanser\0_libraries\python")
 from pal.products.qube import QubeServo2, QubeServo3
