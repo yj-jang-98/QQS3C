@@ -8,6 +8,19 @@ The cryptographic libraries for computational homomorphism use [Microsoft SEAL](
 ## Implementation direction
 The code was implemented through data communication with the Quanser API via TCP/IP in order to use Microsoft's SEAL, a C++ based homomorphic encryption library that can be operated, lattigo (CDSL) written in Go, and openFHE-python that can be run in a Linux environment, since the Quanser hardware API is provided only for Python and runs in a Windows environment.
 
+graph LR
+    subgraph Windows_Host [Windows Host: Plant]
+        A[Quanser Hardware / QLab] <--> B[Python API / C++ SDK]
+        B <--> C{TCP Server}
+    end
+
+    subgraph WSL_Guest [WSL / Remote: Controller]
+        D{TCP Client} <--> E[Encrypted Controller]
+        E --- F[SEAL / OpenFHE / Lattigo]
+    end
+
+    C <--> |TCP/IP| D
+
 ---
 
 ## Features
