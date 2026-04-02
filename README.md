@@ -93,13 +93,13 @@ If not, you should refer to the above version and install it.
      ``` bash
        pwd
      ```
-   * Change the address above to *** below. (C++ Link)
+   * Change the address above to <YOUR_PATH> below. (C++ Link)
      ``` bash
-       export CPATH=$CPATH:***/communication/cpp
+       export CPATH=$CPATH<YOUR_PATH>communication/cpp
      ```
    * And with same address, change to below.
      ``` bash
-       pip install -e "***/communication/py"
+       pip install -e "<YOUR_PATH>/communication/py"
      ```
 4. Lattigo installation
    * This is automatically handled by go mod tidy, so no preparation is required.
@@ -146,9 +146,9 @@ If not, you should refer to the above version and install it.
      ``` powershell
        pwd
      ```
-   * Change the address above to *** below.
+   * Change the address above to <YOUR_PATH> below.
      ``` powershell
-       pip install -e "***/communication/py"
+       pip install -e "<YOUR_PATH>/communication/py"
      ```
 5. You need to check the hyper-v ip for TCP/IP communication between the Windows and WSL.
    ``` powershell
@@ -190,9 +190,9 @@ All python implementation need to apply on venv environment. (you can check (ven
   packages = ["pal"]
 ```
 3. Find absolute address location of `pyproject.toml`
-4. Be careful that your environment is on venv, put the command below (change *** to address what we found step 3)
+4. Be careful that your environment is on venv, put the command below (change <YOUR_PATH> to address what we found step 3)
   ```
-    pip install -e ***
+    pip install -e <YOUR_PATH>
   ```
 
 **OPTION 1**: If you want to use QUARC-C based plant code (more suitable real-time interaction than python), need more setting on Visual Studio(VS 2022)
@@ -259,9 +259,9 @@ There are two different executions in each environment.
         ``` bash
           pwd
         ```
-        Copy the result and paste it into *** below.
+        Copy the result and paste it into <YOUR_PATH> below.
         ``` bash
-          export GOPATH=***
+          export GOPATH=<YOUR_PATH>
         ```
      6. At that location, write something like the following and be ready to press enter.
         ``` bash
