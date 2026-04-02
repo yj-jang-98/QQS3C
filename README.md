@@ -104,6 +104,24 @@ If WSL is installed, the appropriate Linux OS is Ubuntu-24.04 LTS version.
 
 And next is Quanser requirement on Windows. You need to installation Quanser's api and library to use this code. 
 
+This requires two essential settings:
+
+1. Installation Quanser SDK
+2. Installation Quanser library
+ 
+**1** if you want to use Ouanser Interactive Labs(QLab), additionally follows below.
+1. Enter the url [portal_quanser](https://portal.quanser.com/Downloads), find 'these instructions' in "For Python users" section, and find 'Get Started' in "Design Philosophy" section.
+2. Download and install Quanser Interactive Labs to click 'Windows' in "Attention" section.
+3. Download and install SDK to click 'Download Quanser SDK for Windows' in "Attention Windows" section.
+4. If you do not touch any option during installing, you can find 'quanser_api' word in "Program Files/Quanser/Quanser SDK/python" path. Just check this file.
+5. Enter the url [quanser](https://github.com/quanser/Quanser_Academic_Resources), download library(whole things) and unzip proper path(like document).
+6. In the QQS3C "interaction/plant/py/hardware", the top side, "sys.path.append(r"-")" change the path "-" to the path set in step 5.
+7. Make sure venv is on, write (**VERY IMPORTANT: Anything on Quanser requires this, so it must be installed**)
+  ``` powershell
+    python -m pip install --upgrade --find-links "C:\Program Files\Quanser\Quanser SDK\python" "C:\Program Files\Quanser\Quanser SDK\python\quanser_api-2025.11.1-py2.py3-none-any.whl"
+  ```
+  on the terminal and connect the SDK (this path can find in step 4).
+
 ### Settings for operation
 There exist two way to use this library. One is using both Windows and WSL environment, The other is using only Windows environment.
 This section introduce setting method of both side.
@@ -206,19 +224,6 @@ If not, you should refer to the above version and install it.
      ipconfig
    ```
    Save IPv4 address of vEthernet (WSL (Hyper-V...)).
-   
-**OPTION 1** if you want to use Ouanser Interactive Labs(QLab), additionally follows below.
-1. Enter the url [portal_quanser](https://portal.quanser.com/Downloads), find 'these instructions' in "For Python users" section, and find 'Get Started' in "Design Philosophy" section.
-2. Download and install Quanser Interactive Labs to click 'Windows' in "Attention" section.
-3. Download and install SDK to click 'Download Quanser SDK for Windows' in "Attention Windows" section.
-4. If you do not touch any option during installing, you can find 'quanser_api' word in "Program Files/Quanser/Quanser SDK/python" path. Just check this file.
-5. Enter the url [quanser](https://github.com/quanser/Quanser_Academic_Resources), download library(whole things) and unzip proper path(like document).
-6. In the QQS3C "interaction/plant/py/hardware", the top side, "sys.path.append(r"-")" change the path "-" to the path set in step 5.
-7. Make sure venv is on, write (**VERY IMPORTANT: Anything on Quanser requires this, so it must be installed**)
-  ``` powershell
-    python -m pip install --upgrade --find-links "C:\Program Files\Quanser\Quanser SDK\python" "C:\Program Files\Quanser\Quanser SDK\python\quanser_api-2025.11.1-py2.py3-none-any.whl"
-  ```
-  on the terminal and connect the SDK (this path can find in step 4).
 
 **OPTION 2** If you want to use QUARC-C based plant code (more suitable real-time interaction than python), need more setting on Visual Studio(VS 2022)
 1. Install Visual Studio and QLab(according to the above content).
