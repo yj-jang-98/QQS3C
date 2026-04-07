@@ -45,9 +45,9 @@ They are in order a version implemented in Python as Microsoft SEAL C++ by arx_m
 | Model | Language | Encryption | Security (128-bit) | Status | Python Series | Other Series |
 | :--- | :---: | :---: | :---: | :--- | :--- | :--- |
 | **state_filter(d/dt filter)** | Python | - | - | **Not Available** | nominal | Ⅹ | 
-| **full_state_feedback** | Python | BGV (OpenFHE-python) | △ | Available | nominal, quantized(_q), encrpyted(_enc) | Ⅹ |
-| **observer_form** | Python | BGV (OpenFHE-python) | Ⅹ | Available (without enc) | nominal, quantized(_q), encrypted(_enc) | Ⅹ | 
-| **arx_model** | Python/C++ | BGV (OpenFHE-python/SEAL) | ◎ | Available | nominal, quantized(_q), encrypted(_enc) | encrypted(_enc) |
+| **full_state_feedback** | Python | BGV (OpenFHE-python[1.4.2.0 version]) | △ | Available | nominal, quantized(_q), encrpyted(_enc) | Ⅹ |
+| **observer_form** | Python | BGV (OpenFHE-python[1.4.2.0 version]) | Ⅹ | Available (without enc) | nominal, quantized(_q), encrypted(_enc) | Ⅹ | 
+| **arx_model** | Python/C++ | BGV (OpenFHE-python[1.4.2.0 version]/SEAL) | ◎ | Available | nominal, quantized(_q), encrypted(_enc) | encrypted(_enc) |
 | **integer_matrix** | Python/Go | RGSW (CDSL lattigo) | △ | Available | nominal, quantized(_q), encrypted(_enc) | encrypted(_enc) |
 
 Note: Nominal refers to the controller as designed, '_q' is the quantized version of the state variable state matrices, and '_enc' is the encrypted version.
