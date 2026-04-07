@@ -124,7 +124,8 @@ Provided by SEOULTECH CDSL.
 This project utilizes code from several open-source projects. We express our gratitude to their developers. The licenses for these dependencies are listed below.
 
 * **Quanser Academic Resource**
-    * Licensed unser the [BSD 3-Clause License](https://github.com/quanser/Quanser_Academic_Resources/tree/dev-windows)  
+    * Licensed unser the [BSD 3-Clause License](https://github.com/quanser/Quanser_Academic_Resources/tree/dev-windows)
+      
 * **Lattigo (v6)**
     * Licensed under the [Apache License 2.0](https://github.com/tuneinsight/lattigo/blob/main/LICENSE)
 
