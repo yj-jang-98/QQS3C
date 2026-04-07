@@ -1,8 +1,8 @@
-import sys
-sys.path.append(r"C:\Quanser\0_libraries\python")
-from pal.products.qube import QubeServo2, QubeServo3
-from pal.utilities.math import SignalGenerator, ddt_filter
-from pal.utilities.scope import Scope
+# import sys
+# sys.path.append(r"C:\Quanser\0_libraries\python")
+# from pal.products.qube import QubeServo2, QubeServo3
+# from pal.utilities.math import SignalGenerator, ddt_filter
+# from pal.utilities.scope import Scope
 
 import tcp_protocol_server as tcs
 
