@@ -123,7 +123,7 @@ Provided by SEOULTECH CDSL.
 # Licenses & Acknowledgements
 This project utilizes code from several open-source projects. We express our gratitude to their developers. The licenses for these dependencies are listed below.
 
-* **Quanser Academic Resource**
+* **Quanser Academic Resources**
     * Licensed unser the [BSD 3-Clause License](https://github.com/quanser/Quanser_Academic_Resources/blob/dev-windows/LICENSE)
       
 * **Lattigo (v6)**
