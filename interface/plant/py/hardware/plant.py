@@ -140,9 +140,9 @@ def control_loop():
                 # plot to scopes
                 count += 1
                 if count >= countMax:
-                    scopePendulum.sample(timeStamp, [-alpha])
-                    scopeBase.sample(timeStamp, [-theta])
-                    scopeVoltage.sample(timeStamp,[voltage])
+                    scopePendulum.sample(timeStamp, -alpha)
+                    scopeBase.sample(timeStamp, -theta)
+                    scopeVoltage.sample(timeStamp,voltage)
                     count = 0
 
                 timeStamp = elapsed_time()
