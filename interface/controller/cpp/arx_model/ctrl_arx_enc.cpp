@@ -64,12 +64,12 @@ int main()
             tccp.Send<double>(u[0]);
 
             // y and u value encryption after packing
-            Ciphertext signal = enc_4_arx.enc_signal(y, u);
+            Ciphertext signal_enc = enc_4_arx.enc_signal(y, u);
 
             // -- controller description -- //
             // ========================================================== //
             // ctrl mem update on encrypted space after encryption input/output value
-            arx_enc_v.mem_update(signal);
+            arx_enc_v.mem_update(signal_enc);
 
             // get control input on ciphertext space
             Ciphertext enc_u = arx_enc_v.get_output();
