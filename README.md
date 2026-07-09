@@ -1,148 +1,303 @@
-# QQS3C
-QQS3C provides the drive code for encrypted control for the Quanser Qube Servo 3 model. 
-The code transforms dynamic controllers through various methods and then drives the system through homomorphic encryption. 
-The cryptographic libraries for computational homomorphism use [Microsoft SEAL](https://github.com/microsoft/SEAL), [OpenFHE-python](https://github.com/openfheorg/openfhe-python), and [CDSL-EncryptedControl](https://github.com/CDSL-EncryptedControl/CDSL/tree/main) using [lattigo](https://github.com/tuneinsight/lattigo). The code uses Quanser's Qube Servo 3 model [Qube Servo 3](https://github.com/quanser/Quanser_Academic_Resources/tree/dev-windows) Python API. The system is specialized in stabilization (regulation). For tracking control of Quanser's Aero2 model, see [QA2C](https://github.com/RFA0608/QA2C).
+# QQS3C VEMPC Controller
 
----
+This README documents the current implementation in `QQS3C/interface/controller/py/vempc`.
+It focuses on:
 
-## Implementation direction
-The code was implemented through data communication with the Quanser API via TCP/IP in order to use Microsoft's SEAL, a C++ based homomorphic encryption library that can be operated, lattigo (CDSL) written in Go, and openFHE-python that can be run in a Linux environment(**v15 release later version doesn't work, please use v14 release version of openfhe-python**), since the Quanser hardware API is provided only for Python and runs in a Windows environment. (Windows-only version also works)
+- what `ctrl_vempc.py` does
+- how it interacts with the plant
+- which variational MPC parameters are currently used
+- how to run the controller in simulation or with the hardware-side plant code
 
-``` mermaid
-graph LR
-    subgraph Windows_Host [Windows Host: Plant]
-        A[Quanser Hardware / QLab] <--> B[Python API / C++ SDK]
-        B <--> C{TCP Server}
-    end
+## Folder Structure
 
-    subgraph WSL_Guest [WSL / Remote: Controller]
-        D{TCP Client} <--> E[Encrypted Controller]
-        E --- F[SEAL / OpenFHE / Lattigo]
-    end
+- `interface/controller/py/vempc/config.py`
+  Defines the controller configuration exported from Python to the Go engine.
+- `interface/controller/py/vempc/model.py`
+  Starts, stops, and communicates with the Go VEMPC engine.
+- `interface/controller/py/vempc/ctrl_vempc.py`
+  TCP client that talks to the QQS3C plant and forwards measurements to the Go engine.
+- `interface/controller/py/vempc/unencrypted/`
+  Local Go module that implements the observer, condensed MPC, and variational MPC engine.
+- `interface/controller/py/vempc/runtime/controller_config.json`
+  Generated config file written by Python before the Go engine starts.
+- `interface/controller/py/vempc/results/`
+  Overwritten on every run with:
+  - `cycles.csv`
+  - `summary.json`
+  - `qube_signals.png`
 
-    C <--> |TCP/IP| D
+## Current Controller Type
+
+The current default backend is **variational MPC**.
+
+This is set in `interface/controller/py/vempc/config.py`:
+
+- `backend = "variational"`
+
+If you change that field to `"standard"`, the same Python bridge will run the deterministic condensed MPC solver instead.
+
+## Current Variational MPC Configuration
+
+All current parameters are defined in `interface/controller/py/vempc/config.py`.
+
+### Sampling and horizon
+
+- `sample_time = 0.02`
+  The controller runs at 50 Hz.
+- `horizon = 15`
+  The MPC horizon is 15 steps.
+  With `dt = 0.02`, this corresponds to 0.30 s of look-ahead.
+
+### QQS3C plant/observer model
+
+The Go engine does not rebuild a model from physical parameters.
+It uses the discrete QQS3C model exported directly from Python:
+
+- `A`
+  4x4 discrete state matrix
+- `B`
+  4x1 discrete input matrix
+- `C`
+  2x4 output matrix
+- `L`
+  4x2 observer gain
+
+This means the controller behavior follows the QQS3C identified model, not the separate IFAC QUBE parameter model.
+
+### Cost
+
+- `q_diag = (5000.0, 400.0, 1.0, 1.0)`
+  State penalty diagonal.
+  This strongly penalizes the first two states, especially the first one.
+- `r_diag = (1.0,)`
+  Input penalty diagonal.
+- `qf_scale = 10.0`
+  Terminal cost is `Qf = 10 * Q`.
+
+### Constraints
+
+- `alpha_max = radians(15.0)`
+  State constraint for the pendulum angle used by the Go engine.
+- `u_max = 15.0`
+  Input magnitude bound used in MPC.
+
+### Variational parameters
+
+- `sigma0 = 6.0`
+  Width of the prior covariance for the sampled stacked control sequence.
+  Larger values spread samples more widely.
+- `lambda_param = 0.75`
+  Temperature parameter in the variational formulation.
+  It controls how strongly the cost term shapes the tilted Gaussian.
+- `k_samples = 512`
+  Number of sampled candidate input sequences per control step.
+- `cheb_order = 7`
+  Degree of the Chebyshev polynomial used to approximate ReLU in the constraint-weighting stage.
+- `cheb_bound = 15.0`
+  Scaling bound for the polynomial surrogate.
+- `cheb_eta = 1.0`
+  Exponential penalty scaling on surrogate constraint violations.
+- `cheb_clip = True`
+  Clips the normalized input and negative surrogate output in the weighting pipeline.
+
+### Initial estimate
+
+- `x0 = (0.0, 0.0, 0.0, 0.0)`
+  Initial observer state inside the Go engine.
+
+## What `ctrl_vempc.py` Does
+
+`ctrl_vempc.py` is the outer controller process. It does not implement MPC directly.
+Its job is to bridge:
+
+- the QQS3C plant TCP protocol
+- the local Go VEMPC engine
+
+The high-level flow is:
+
+1. Create or reuse `results/`.
+2. Start `GoVEMPCController()`.
+3. `GoVEMPCController()` writes `runtime/controller_config.json`.
+4. `GoVEMPCController()` builds `unencrypted/vempc_engine.exe` if needed.
+5. `GoVEMPCController()` launches the Go process and keeps it alive.
+6. `ctrl_vempc.py` opens a TCP client to the plant at `localhost:9999`.
+7. On every `"run"` signal:
+   - receive `y0`
+   - receive `y1`
+   - send `{"type":"measure","y":[y0,y1]}` to the Go process over `stdin`
+   - receive a JSON response from `stdout`
+   - extract `u`
+   - send `u` back to the plant over TCP
+   - log timing and diagnostics
+8. On `"end"`:
+   - stop the loop
+   - write `cycles.csv`, `summary.json`, and `qube_signals.png`
+   - print mean and variance of control-cycle time
+
+## How the Go Engine Works
+
+The Go engine lives in `interface/controller/py/vempc/unencrypted/main.go`.
+
+For each measurement update:
+
+1. Correct the observer state with the measured output.
+2. Build the current MPC state vector `x_hat`.
+3. If backend is `"standard"`:
+   - solve condensed MPC with the soft-constrained L-BFGS solver
+4. If backend is `"variational"`:
+   - sample `K = 512` candidate stacked input sequences
+   - compute surrogate constraint weights
+   - form a weighted average
+   - apply only the first control input
+5. Predict the observer forward with the applied input.
+6. Return a JSON response containing:
+   - `u`
+   - `x_hat`
+   - `w_sum` and `accept_num` for variational mode
+
+## Plant Interaction
+
+The plant side is the TCP server. The controller side is the TCP client.
+
+### Simulation plant
+
+`interface/plant/py/simulation/plant.py` does the following:
+
+1. Send `"run"`
+2. Send `y[0]`
+3. Send `y[1]`
+4. Wait for one scalar control input `u`
+5. Update the simulated plant
+6. Repeat
+7. Send `"end"` after the run finishes
+
+### Hardware plant
+
+`interface/plant/py/hardware/plant.py` and `plant_with_swing_up.py` use the same TCP handshake:
+
+1. Send `"run"`
+2. Send measured outputs
+3. Receive `u`
+4. Apply actuator logic and saturation
+5. Repeat
+6. Send `"end"` when the experiment ends
+
+In `plant_with_swing_up.py`, the VEMPC controller is only used after the swing-up and switching logic hand over control to the external controller.
+
+## Results Written by the Controller
+
+Every time `ctrl_vempc.py` completes a run, it overwrites:
+
+- `interface/controller/py/vempc/results/cycles.csv`
+- `interface/controller/py/vempc/results/summary.json`
+- `interface/controller/py/vempc/results/qube_signals.png`
+
+### `cycles.csv`
+
+Contains one row per control cycle:
+
+- `step`
+- `y0`
+- `y1`
+- `u`
+- `cycle_ms`
+- `w_sum`
+- `accept_num`
+- `x_hat_0`
+- `x_hat_1`
+- `x_hat_2`
+- `x_hat_3`
+
+### `summary.json`
+
+Contains:
+
+- `backend`
+- `steps`
+- `avg_cycle_ms`
+- `var_cycle_ms`
+- `results_dir`
+
+### `qube_signals.png`
+
+Contains four plots:
+
+- `y0`
+- `y1`
+- `u`
+- control-cycle time in milliseconds
+
+These plots come from the controller log, not from Quanser's live `Scope` windows.
+
+## How to Run
+
+## Requirements
+
+- Python environment with:
+  - `numpy`
+  - `matplotlib`
+- Go installed and available on `PATH`
+- `tcp_protocol_client.py` / `tcp_protocol_server.py` reachable through `PYTHONPATH`
+
+For hardware:
+
+- Quanser `pal` Python dependencies installed
+
+## Set `PYTHONPATH`
+
+From the repository root, set:
+
+```powershell
+$env:PYTHONPATH = "QQS3C/communication/py"
 ```
 
----
+This is required because the controller and plant scripts import `tcp_protocol_client` / `tcp_protocol_server` directly.
 
-## Features
-The code implements controller versions in Python, C++, and Go.
-The interfacing code for the Python simulator and the actual hardware, corresponding to each controller, can be found in the "interface/plant" directory.
-The actual device consists of a single file, "plant.py" in "interface/plant/py/hardware", while the simulator consists of "model.py" and "plant.py" in "interface/plant/py/simulation".
-**Code explanation and technical interpretation can be found at the link [QQS3C-obsidian](https://publish.obsidian.md/qqs3c)**
+## Run in Simulation
 
-### Controller description
-You can check the "ctrl_*.py" controller file, which is written in Python, in the "interface/controller/py" folder of the code.
-They are implemented in five technically different forms, which are named by state_filter, full_state_feedback, observer_form, arx_model, integer_matrix, respectively.
-In each folder, both "model.py" and "model_enc.py" are files that implement objects for controller and encrypted control.
-There are also C++ and Go versions of encrypted controllers for faster and more appropriate cryptographic techniques. 
-you can find "interface/controller/C++/arx_model" and "interface/controller/go/integer_matrix".
-They are in order a version implemented in Python as Microsoft SEAL C++ by arx_model and a version implemented in Lattigo (CDSL) by integer_matrix.
+Terminal 1:
 
+```powershell
+python QQS3C/interface/plant/py/simulation/plant.py
+```
 
-**Controller Compatibility**
+Terminal 2:
 
-| Model | Language | Encryption | Security (128-bit) | Status | Python Series | Other Series |
-| :--- | :---: | :---: | :---: | :--- | :--- | :--- |
-| **state_filter(d/dt filter)** | Python | - | - | **Not Available** | nominal | Ⅹ | 
-| **full_state_feedback** | Python | BGV (OpenFHE-python) | △ | Available | nominal, quantized(_q), encrpyted(_enc) | Ⅹ |
-| **observer_form** | Python | BGV (OpenFHE-python) | Ⅹ | Available (without enc) | nominal, quantized(_q), encrypted(_enc) | Ⅹ | 
-| **arx_model** | Python/C++ | BGV (OpenFHE-python/SEAL) | ◎ | Available | nominal, quantized(_q), encrypted(_enc) | encrypted(_enc) |
-| **integer_matrix** | Python/Go | RGSW (CDSL lattigo) | △ | Available | nominal, quantized(_q), encrypted(_enc) | encrypted(_enc) |
+```powershell
+python QQS3C/interface/controller/py/vempc/ctrl_vempc.py
+```
 
-Note: Nominal refers to the controller as designed, '_q' is the quantized version of the state variable state matrices, and '_enc' is the encrypted version.
+Expected behavior:
 
---- 
+- the plant acts as TCP server
+- the controller builds or reuses the Go engine
+- the controller and plant exchange measurements and inputs
+- when the simulation ends, the controller writes fresh files into `interface/controller/py/vempc/results`
 
-## How to use
-It explains the preparations before use, how to use the simulation file, how to use the Ouanser Interactive Labs, and how to use the actual hardware.
+## Run with Hardware Swing-Up Front-End
 
-### Before using
-This project supports both Windows and WSL environments. (Note: The OpenFHE-python wrapper is unavailable in a Windows-only setup, and additional configuration is required)
-Please refer to the link [WSL installation method](https://learn.microsoft.com/ko-kr/windows/wsl/install) for instructions on installing WSL.
+Terminal 1:
 
-This requires three essential elements:
+```powershell
+python QQS3C/interface/plant/py/hardware/plant_with_swing_up.py
+```
 
-1. Go version 1.25.1 or later
-2. C++ 17 compiler or later
-3. Python 3.12 or later
-   
-at least. (The following description is after installing the above three elements)
+Terminal 2:
 
-If WSL is installed, the appropriate Linux OS is Ubuntu-24.04 LTS version. 
+```powershell
+python QQS3C/interface/controller/py/vempc/ctrl_vempc.py
+```
 
-### Install and operate
-You can find Installation guide in [**QQS3C-obsidian > Installation guide**](https://publish.obsidian.md/qqs3c/%EB%9D%BC%EC%9D%B4%EB%B8%8C%EB%9F%AC%EB%A6%AC/QQS3C/Introduction/Installation+guide?). The installation method is **quite tricky**, so please refer to it.
-1. Only Windows users refer to
-   [QQS3C-obsidian > Using Windows only](https://publish.obsidian.md/qqs3c/%EB%9D%BC%EC%9D%B4%EB%B8%8C%EB%9F%AC%EB%A6%AC/QQS3C/Introduction/Using+Windows+only?)
-2. Both Windows and WSL users refer to
-   [QQS3C-obsidian > Using both Windows and WSL](https://publish.obsidian.md/qqs3c/%EB%9D%BC%EC%9D%B4%EB%B8%8C%EB%9F%AC%EB%A6%AC/QQS3C/Introduction/Using+both+Windows+and+WSL?)
+In this mode:
 
-### Change to your code
-The library tried to maintain consistency of the code while creating it. See link [QQS3C-obsidian > Controller modification](https://publish.obsidian.md/qqs3c/%EB%9D%BC%EC%9D%B4%EB%B8%8C%EB%9F%AC%EB%A6%AC/QQS3C/Implementation/Controller+modification?) for a description of it.
+- the plant-side script handles swing-up and switching
+- once it enters the external-controller phase, it starts the same TCP `"run"` / measurement / `u` exchange
+- the VEMPC controller responds exactly as in simulation mode
 
----
+## Notes
 
-# Demonstration
-1. QQS3C Installation Guide:
-https://youtu.be/01qr6Mvyikw
-(This YouTube link only supports Korean)
-   
-3. Quanser Interactive Labs Test:
-https://youtu.be/ncy-5f4BtY0
-
-4. Hardware Test:
-https://youtu.be/kVwAEByurqQ
-(This YouTube link only supports Korean)
-
-The flow of the video is as follows(Hardware only).
-1. "ctrl_fs_enc.py" for hardware demo
-2. "ctrl_arx_enc.cpp" for hardware demo
-3. "ctrl_intmat_enc.go" for hardware demo
-
-In the video, each hardware demonstration is run for about 30 seconds to check whether control was possible.
-
-> **[INFO] Security**
-> 
-> - "ctrl_fs_enc.py" does not satisfy 128-bit lambda security.
-> 
-> - "ctrl_intmat_enc.go" is also like that.
->  (If you ran that code with quarc-c based plant code, then can increase N 12 to 13, which can sufficiently satisfy 128-bit lambda security.)
-> 
-> - On the other hand, "ctrl_arx_enc.cpp" sufficiently satisfies 128-bit lambda security.
-
-# Contact
-If you need help or explanation while using this library, please send me an email below and I will respond.
-
-- jeongmingyu@cdslst.kr (Mingyu Jeong)
-- leesangwon@cdslst.kr (Sangwon Lee)
-- leedonghyun@cdslst.kr (Donghyun Lee)
-
-Provided by SEOULTECH CDSL.
-
-# Licenses & Acknowledgements
-This project utilizes code from several open-source projects. We express our gratitude to their developers. The licenses for these dependencies are listed below.
-
-* **Quanser Academic Resources**
-    * Licensed unser the [BSD 3-Clause License](https://github.com/quanser/Quanser_Academic_Resources/blob/dev-windows/LICENSE)
-      
-* **Lattigo (v6)**
-    * Licensed under the [Apache License 2.0](https://github.com/tuneinsight/lattigo/blob/main/LICENSE)
-
-* **Microsoft SEAL**
-    * Licensed under the [MIT License](https://github.com/microsoft/SEAL/blob/main/LICENSE)
-
-* **CDSL-EncryptedControl**
-    * Licensed under the [MIT License](https://github.com/CDSL-EncryptedControl/CDSL/blob/main/LICENSE)
-
-* **OpenFHE (Python)**
-    * Licensed under the [BSD 2-Clause License](https://github.com/openfheorg/openfhe-python/blob/main/LICENSE)
-
-* **Numpy**
-    * Licensed under the [BSD 3-Clause License](https://github.com/numpy/numpy/blob/main/LICENSE.txt)
-
-* **Matplotlib**
-    * Licensed under the [PSF-style License](https://github.com/matplotlib/matplotlib/blob/main/LICENSE/LICENSE)
-
-* **Python Control Systems Library (python-control)**
-    * Licensed under the [BSD 3-Clause License](https://github.com/python-control/python-control/blob/main/LICENSE)
+- The function name `full_state_feedback()` in `ctrl_vempc.py` is historical.
+  The current controller is not full-state feedback; it is a TCP bridge to the Go MPC engine.
+- The default backend is variational MPC.
+  To switch to standard MPC, change `backend` in `interface/controller/py/vempc/config.py`.
+- The first controller run may take longer because the Go engine may be rebuilt.
