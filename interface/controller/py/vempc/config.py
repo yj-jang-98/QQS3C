@@ -64,6 +64,13 @@ class QQS3CVempcConfig:
     cheb_eta: float = 1.0
     cheb_clip: bool = True
 
+    # Plot-only metadata used by ctrl_vempc.py when it annotates the saved
+    # result figure. These do not affect the Go engine.
+    plot_phase_mode: str = "hardware_swing_up"
+    state_feedback_steps: int = 100
+    outside_controller_angle_deg: float = 20.0
+    swing_up_display_steps: int = 25
+
     x0: tuple[float, ...] = (0.0, 0.0, 0.0, 0.0)
 
     def to_engine_dict(self) -> dict:

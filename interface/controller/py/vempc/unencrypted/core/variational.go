@@ -18,6 +18,22 @@ type VariationalMPC struct {
 	LU          *mat.Dense
 }
 
+type VariationalWorkspace struct {
+	Mean      []float64
+	MeanTmp   []float64
+	Xi        *mat.Dense
+	Noise     *mat.Dense
+	Samples   *mat.Dense
+	Residuals *mat.Dense
+	Surrogate *mat.Dense
+	LogW      []float64
+	Weights   []float64
+	UHat      []float64
+	U0        []float64
+	Feasible  []bool
+	Sampler   *rand.Rand
+}
+
 func NewVariationalMPC(mpc *MPCProblem, penalty *ConstraintPenalty, lambdaParam float64, sigma0 *mat.Dense) *VariationalMPC {
 	SigmaU := computeSigmaU(sigma0, mpc.H, lambdaParam)
 	LU := choleskyLower(SigmaU)
@@ -28,6 +44,27 @@ func NewVariationalMPC(mpc *MPCProblem, penalty *ConstraintPenalty, lambdaParam 
 		Sigma0:      sigma0,
 		SigmaU:      SigmaU,
 		LU:          LU,
+	}
+}
+
+func NewVariationalWorkspace(v *VariationalMPC, K int) *VariationalWorkspace {
+	Nm := v.MPC.Nm
+	p := v.Penalty.P
+	mIn := v.MPC.InputDim()
+	return &VariationalWorkspace{
+		Mean:      make([]float64, Nm),
+		MeanTmp:   make([]float64, Nm),
+		Xi:        mat.NewDense(K, Nm, nil),
+		Noise:     mat.NewDense(K, Nm, nil),
+		Samples:   mat.NewDense(K, Nm, nil),
+		Residuals: mat.NewDense(K, p, nil),
+		Surrogate: mat.NewDense(K, p, nil),
+		LogW:      make([]float64, K),
+		Weights:   make([]float64, K),
+		UHat:      make([]float64, Nm),
+		U0:        make([]float64, mIn),
+		Feasible:  make([]bool, K),
+		Sampler:   rand.New(rand.NewSource(0)),
 	}
 }
 
@@ -69,6 +106,15 @@ func (v *VariationalMPC) mU(x0 []float64) []float64 {
 	return VecScale(SigmaStx, -(1.0 / v.LambdaParam))
 }
 
+func (v *VariationalMPC) mUInto(dst []float64, tmp []float64, x0 []float64) {
+	MatVecMulInto(tmp, v.MPC.S.T(), x0)
+	MatVecMulInto(dst, v.SigmaU, tmp)
+	scale := -(1.0 / v.LambdaParam)
+	for i := range dst {
+		dst[i] *= scale
+	}
+}
+
 func (v *VariationalMPC) SampleKappaTilde(x0 []float64, K int, seed int64) *mat.Dense {
 	// Draw K stacked input sequences U^(i) ~ N(mU(x0), SigmaU).
 	rng := rand.New(rand.NewSource(seed))
@@ -89,6 +135,30 @@ func (v *VariationalMPC) SampleKappaTilde(x0 []float64, K int, seed int64) *mat.
 		}
 	}
 	return samples
+}
+
+func (v *VariationalMPC) SampleKappaTildeInto(ws *VariationalWorkspace, x0 []float64, seed int64) *mat.Dense {
+	ws.Sampler.Seed(seed)
+	v.mUInto(ws.Mean, ws.MeanTmp, x0)
+
+	xiData := ws.Xi.RawMatrix().Data
+	for i := range xiData {
+		xiData[i] = ws.Sampler.NormFloat64()
+	}
+
+	ws.Noise.Mul(ws.Xi, v.LU.T())
+
+	noiseRaw := ws.Noise.RawMatrix()
+	sampleRaw := ws.Samples.RawMatrix()
+	Nm := len(ws.Mean)
+	for i := 0; i < noiseRaw.Rows; i++ {
+		noiseRow := noiseRaw.Data[i*noiseRaw.Stride : i*noiseRaw.Stride+Nm]
+		sampleRow := sampleRaw.Data[i*sampleRaw.Stride : i*sampleRaw.Stride+Nm]
+		for j := 0; j < Nm; j++ {
+			sampleRow[j] = ws.Mean[j] + noiseRow[j]
+		}
+	}
+	return ws.Samples
 }
 
 type WeightOptions struct {
@@ -167,12 +237,91 @@ func (v *VariationalMPC) ComputeWeights(U *mat.Dense, x0 []float64, opts WeightO
 	return weights, sum
 }
 
+func (v *VariationalMPC) ComputeWeightsFromResidualsInto(
+	residuals *mat.Dense,
+	opts WeightOptions,
+	surrogate *mat.Dense,
+	logWeights []float64,
+	weights []float64,
+) float64 {
+	K, _ := residuals.Dims()
+	if opts.Eps == 0 {
+		opts.Eps = 1e-12
+	}
+
+	for i := 0; i < K; i++ {
+		logWeights[i] = math.Inf(-1)
+	}
+
+	chebReLUInto(surrogate, residuals, opts.ChebCoeffs, opts.ChebBound, opts.ChebClip)
+	threshold := chebVal(0.0, opts.ChebCoeffs)
+
+	eta := opts.ChebEta
+	if eta == 0 {
+		eta = 1.0
+	}
+
+	raw := surrogate.RawMatrix()
+	for i := 0; i < raw.Rows; i++ {
+		row := raw.Data[i*raw.Stride : i*raw.Stride+raw.Cols]
+		var s float64
+		for _, val := range row {
+			if val > threshold {
+				s += val
+			}
+		}
+		logWeights[i] = -eta * s
+	}
+
+	maxLog := math.Inf(-1)
+	for i := 0; i < K; i++ {
+		v := logWeights[i]
+		if math.IsInf(v, -1) {
+			continue
+		}
+		if v > maxLog {
+			maxLog = v
+		}
+	}
+	if math.IsInf(maxLog, -1) {
+		maxLog = 0.0
+	}
+
+	var sum float64
+	for i := 0; i < K; i++ {
+		v := logWeights[i]
+		if math.IsInf(v, -1) {
+			weights[i] = 0.0
+			continue
+		}
+		w := math.Exp(v - maxLog)
+		weights[i] = w
+		sum += w
+	}
+	if sum > 0 {
+		inv := 1.0 / sum
+		for i := 0; i < K; i++ {
+			weights[i] *= inv
+		}
+	}
+	return sum
+}
+
 func chebReLU(residuals *mat.Dense, coeffs []float64, bound float64, clip bool) *mat.Dense {
 	r, c := residuals.Dims()
 	out := mat.NewDense(r, c, nil)
-	for i := 0; i < r; i++ {
-		for j := 0; j < c; j++ {
-			t := residuals.At(i, j) / bound
+	chebReLUInto(out, residuals, coeffs, bound, clip)
+	return out
+}
+
+func chebReLUInto(dst *mat.Dense, residuals *mat.Dense, coeffs []float64, bound float64, clip bool) {
+	residualRaw := residuals.RawMatrix()
+	outRaw := dst.RawMatrix()
+	for i := 0; i < residualRaw.Rows; i++ {
+		inRow := residualRaw.Data[i*residualRaw.Stride : i*residualRaw.Stride+residualRaw.Cols]
+		outRow := outRaw.Data[i*outRaw.Stride : i*outRaw.Stride+outRaw.Cols]
+		for j := 0; j < residualRaw.Cols; j++ {
+			t := inRow[j] / bound
 			if clip {
 				if t < -1.0 {
 					t = -1.0
@@ -185,10 +334,9 @@ func chebReLU(residuals *mat.Dense, coeffs []float64, bound float64, clip bool) 
 			if clip && y < 0.0 {
 				y = 0.0
 			}
-			out.Set(i, j, y)
+			outRow[j] = y
 		}
 	}
-	return out
 }
 
 func chebVal(t float64, coeffs []float64) float64 {

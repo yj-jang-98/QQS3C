@@ -31,41 +31,59 @@ type response struct {
 type observer struct {
 	// The observer lives inside the Go engine so the Python side can stay
 	// stateless and send only measured outputs.
-	A *mat.Dense
-	B *mat.Dense
-	C *mat.Dense
-	L *mat.Dense
-	x []float64
+	A          *mat.Dense
+	B          *mat.Dense
+	C          *mat.Dense
+	L          *mat.Dense
+	x          []float64
+	cx         []float64
+	innovation []float64
+	linj       []float64
+	ax         []float64
+	bu         []float64
+	stateOut   []float64
 }
 
 func newObserver(A, B, C, L *mat.Dense, x0 []float64) *observer {
 	x := make([]float64, len(x0))
 	copy(x, x0)
-	return &observer{A: A, B: B, C: C, L: L, x: x}
+	yDim, _ := C.Dims()
+	n := len(x0)
+	return &observer{
+		A:          A,
+		B:          B,
+		C:          C,
+		L:          L,
+		x:          x,
+		cx:         make([]float64, yDim),
+		innovation: make([]float64, yDim),
+		linj:       make([]float64, n),
+		ax:         make([]float64, n),
+		bu:         make([]float64, n),
+		stateOut:   make([]float64, n),
+	}
 }
 
 func (o *observer) Correct(y []float64) []float64 {
 	// Luenberger-style correction step: x <- x + L(y - Cx).
-	cx := core.MatVecMul(o.C, o.x)
-	innovation := make([]float64, len(y))
+	core.MatVecMulInto(o.cx, o.C, o.x)
 	for i := range y {
-		innovation[i] = y[i] - cx[i]
+		o.innovation[i] = y[i] - o.cx[i]
 	}
-	linj := core.MatVecMul(o.L, innovation)
+	core.MatVecMulInto(o.linj, o.L, o.innovation)
 	for i := range o.x {
-		o.x[i] += linj[i]
+		o.x[i] += o.linj[i]
 	}
-	out := make([]float64, len(o.x))
-	copy(out, o.x)
-	return out
+	copy(o.stateOut, o.x)
+	return o.stateOut
 }
 
 func (o *observer) Predict(u []float64) {
 	// One-step prediction used to carry the estimated state to the next sample.
-	ax := core.MatVecMul(o.A, o.x)
-	bu := core.MatVecMul(o.B, u)
+	core.MatVecMulInto(o.ax, o.A, o.x)
+	core.MatVecMulInto(o.bu, o.B, u)
 	for i := range o.x {
-		o.x[i] = ax[i] + bu[i]
+		o.x[i] = o.ax[i] + o.bu[i]
 	}
 }
 
@@ -73,21 +91,22 @@ type onlineController struct {
 	// This struct holds the long-lived controller state that would be expensive
 	// to rebuild for every sample: observer state, condensed matrices, warm
 	// starts, and variational sampling settings.
-	backend     string
-	observer    *observer
-	stdSolver   *solvers.StandardQPSolver
-	variational *core.VariationalMPC
-	penalty     *core.ConstraintPenalty
-	S           *mat.Dense
-	hOfX0       func([]float64) []float64
-	mIn         int
-	warm        []float64
-	chebCoeffs  []float64
-	chebBound   float64
-	chebEta     float64
-	chebClip    bool
-	kSamples    int
-	rng         *rand.Rand
+	backend      string
+	observer     *observer
+	stdSolver    *solvers.StandardQPSolver
+	variational  *core.VariationalMPC
+	penalty      *core.ConstraintPenalty
+	S            *mat.Dense
+	hOfX0        func([]float64) []float64
+	mIn          int
+	warm         []float64
+	chebCoeffs   []float64
+	chebBound    float64
+	chebEta      float64
+	chebClip     bool
+	kSamples     int
+	rng          *rand.Rand
+	varWorkspace *core.VariationalWorkspace
 }
 
 func newOnlineController(cfg engineconfig.Config) (*onlineController, error) {
@@ -152,17 +171,17 @@ func newOnlineController(cfg engineconfig.Config) (*onlineController, error) {
 	penalty := core.NewConstraintPenalty(G, hOfX0, "indicator")
 
 	engine := &onlineController{
-		backend:    cfg.Backend,
-		observer:   newObserver(A, B, C, L, cfg.X0),
-		S:          mpc.S,
-		hOfX0:      hOfX0,
-		mIn:        mIn,
-		penalty:    penalty,
-		chebBound:  cfg.ChebBound,
-		chebEta:    cfg.ChebEta,
-		chebClip:   cfg.ChebClip,
-		kSamples:   cfg.K,
-		rng:        rand.New(rand.NewSource(0)),
+		backend:   cfg.Backend,
+		observer:  newObserver(A, B, C, L, cfg.X0),
+		S:         mpc.S,
+		hOfX0:     hOfX0,
+		mIn:       mIn,
+		penalty:   penalty,
+		chebBound: cfg.ChebBound,
+		chebEta:   cfg.ChebEta,
+		chebClip:  cfg.ChebClip,
+		kSamples:  cfg.K,
+		rng:       rand.New(rand.NewSource(0)),
 	}
 
 	if cfg.Backend == "" || cfg.Backend == "variational" {
@@ -171,6 +190,7 @@ func newOnlineController(cfg engineconfig.Config) (*onlineController, error) {
 		sigma0 := scaledIdentity(mpc.StackedInputDim(), cfg.Sigma0*cfg.Sigma0)
 		engine.variational = core.NewVariationalMPC(mpc, penalty, cfg.LambdaParam, sigma0)
 		engine.chebCoeffs = solvers.ChebyshevReLUCoeffs(cfg.ChebOrder, cfg.ChebBound, 0)
+		engine.varWorkspace = core.NewVariationalWorkspace(engine.variational, cfg.K)
 		engine.backend = "variational"
 		return engine, nil
 	}
@@ -198,16 +218,16 @@ func (c *onlineController) Step(y []float64) response {
 		// The variational controller samples candidate input sequences, scores
 		// their constraint violations, and returns the weighted first action.
 		seed := c.rng.Int63()
-		u, _, wSum, acceptNum := solvers.SampleVariationalControl(
+		u, _, wSum, acceptNum := solvers.SampleVariationalControlWithWorkspace(
 			x,
 			c.variational,
 			c.penalty,
-			c.kSamples,
 			c.chebCoeffs,
 			c.chebBound,
 			c.chebEta,
 			c.chebClip,
 			seed,
+			c.varWorkspace,
 		)
 		c.observer.Predict(u)
 		return response{U: u[0], WSum: wSum, AcceptNum: acceptNum, XHat: x}

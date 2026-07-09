@@ -7,7 +7,7 @@ from config import DEFAULT_CONFIG, write_engine_config
 
 
 class GoVEMPCController:
-    def __init__(self, config=DEFAULT_CONFIG, rebuild=True):
+    def __init__(self, config=DEFAULT_CONFIG, rebuild=False):
         # This class is intentionally thin: Python owns process management and
         # TCP I/O, while the Go binary owns state estimation and MPC math.
         self.config = config
@@ -16,7 +16,7 @@ class GoVEMPCController:
         self.binary_path = self.engine_dir / ("vempc_engine.exe" if os.name == "nt" else "vempc_engine")
         self.config_path = write_engine_config(config)
         self.process = None
-        if rebuild or not self.binary_path.exists():
+        if rebuild or self._needs_rebuild():
             self._build_engine()
         self._start_engine()
 
@@ -46,6 +46,20 @@ class GoVEMPCController:
                 f"stdout:\n{result.stdout}\n"
                 f"stderr:\n{result.stderr}"
             )
+
+    def _needs_rebuild(self):
+        if not self.binary_path.exists():
+            return True
+        binary_mtime = self.binary_path.stat().st_mtime
+        for source_path in self.engine_dir.rglob("*.go"):
+            if source_path.stat().st_mtime > binary_mtime:
+                return True
+        go_mod = self.engine_dir / "go.mod"
+        go_sum = self.engine_dir / "go.sum"
+        for dependency_path in (go_mod, go_sum):
+            if dependency_path.exists() and dependency_path.stat().st_mtime > binary_mtime:
+                return True
+        return False
 
     def _start_engine(self):
         # The Go engine speaks newline-delimited JSON over stdin/stdout, which

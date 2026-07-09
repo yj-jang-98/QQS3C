@@ -56,6 +56,17 @@ func MatVecMul(a mat.Matrix, x []float64) []float64 {
 	return out
 }
 
+func MatVecMulInto(dst []float64, a mat.Matrix, x []float64) {
+	r, c := a.Dims()
+	for i := 0; i < r; i++ {
+		var sum float64
+		for j := 0; j < c; j++ {
+			sum += a.At(i, j) * x[j]
+		}
+		dst[i] = sum
+	}
+}
+
 func VecSub(a, b []float64) []float64 {
 	out := make([]float64, len(a))
 	for i := range a {
