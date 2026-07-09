@@ -79,7 +79,7 @@ def main():
         axes[1].grid(True)
         fig.suptitle('plant output')
         plt.tight_layout()
-        plt.savefig('./interface/plant/py/simulation/result/plant output as sim.png')
+        plt.savefig('./result/plant output as sim.png')
 
 if __name__ == "__main__":
     main()

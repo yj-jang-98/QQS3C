@@ -25,7 +25,7 @@ def sig_handler(*args):
 signal.signal(signal.SIGINT, sig_handler)
 
 # simulation time and plotting set
-simulationTime = 30 # will run for 30 seconds
+simulationTime = 15 # will run for 15 seconds
 color = np.array([0, 1, 0], dtype=np.float64)
 
 scopePendulum = Scope(
@@ -57,7 +57,7 @@ def control_loop():
     qubeversion = 3
     
     # if you want to use Ouanser Interactive Labs, you will change to 0
-    hardware = 1
+    hardware = 0
     
     pendulum = 1
 

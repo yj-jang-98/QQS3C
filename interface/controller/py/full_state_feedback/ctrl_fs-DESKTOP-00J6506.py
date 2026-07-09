@@ -27,7 +27,7 @@ def full_state_feedback():
     with tcc.tcp_client(HOST, PORT) as tccp:
         while run_signal:
             # running signal send for controller
-            _, signal = tccp.recv() # Waiting for a plant-side signal
+            _, signal = tccp.recv()
 
             if signal == "run":
                 # get plant output
