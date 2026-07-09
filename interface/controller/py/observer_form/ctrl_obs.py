@@ -16,7 +16,10 @@ def observer_based_controller():
     run_signal = True
 
     # get model from model description file
+    # ====================================
+    # TODO: Change this to my model
     obs = model.obs(sampling_time)
+    # ====================================
 
     # input/output initialization
     y = np.array([[0],
@@ -39,6 +42,7 @@ def observer_based_controller():
                 tccp.send(u[0, 0])
 
                 # state update and generate output
+                # TODO: change this to my method of generating control input
                 obs.state_update(y)
                 u = obs.get_output()
             elif signal == "end":

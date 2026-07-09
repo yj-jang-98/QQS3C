@@ -1,0 +1,8 @@
+./dirichlet.go
+./distmv.go
+./doc.go
+./interfaces.go
+./normal.go
+./statdist.go
+./studentst.go
+./uniform.go
