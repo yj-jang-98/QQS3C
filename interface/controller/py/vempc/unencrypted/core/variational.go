@@ -8,6 +8,8 @@ import (
 )
 
 type VariationalMPC struct {
+	// SigmaU and LU are the tilted covariance and its Cholesky factor used to
+	// sample candidate control sequences efficiently at runtime.
 	MPC         *MPCProblem
 	Penalty     *ConstraintPenalty
 	LambdaParam float64
@@ -30,6 +32,7 @@ func NewVariationalMPC(mpc *MPCProblem, penalty *ConstraintPenalty, lambdaParam 
 }
 
 func computeSigmaU(Sigma0, H *mat.Dense, lambda float64) *mat.Dense {
+	// SigmaU = (Sigma0^{-1} + H/lambda)^{-1}.
 	var Sigma0Inv mat.Dense
 	_ = Sigma0Inv.Inverse(Sigma0)
 	var scaledH mat.Dense
@@ -60,12 +63,14 @@ func choleskyLower(A *mat.Dense) *mat.Dense {
 }
 
 func (v *VariationalMPC) mU(x0 []float64) []float64 {
+	// Mean of the tilted Gaussian over stacked control sequences.
 	Stx := MatVecMul(v.MPC.S.T(), x0)
 	SigmaStx := MatVecMul(v.SigmaU, Stx)
 	return VecScale(SigmaStx, -(1.0 / v.LambdaParam))
 }
 
 func (v *VariationalMPC) SampleKappaTilde(x0 []float64, K int, seed int64) *mat.Dense {
+	// Draw K stacked input sequences U^(i) ~ N(mU(x0), SigmaU).
 	rng := rand.New(rand.NewSource(seed))
 	Nm := v.MPC.Nm
 	mean := v.mU(x0)
@@ -105,6 +110,8 @@ func (v *VariationalMPC) ComputeWeights(U *mat.Dense, x0 []float64, opts WeightO
 		logWeights[i] = math.Inf(-1)
 	}
 
+	// Residuals g(U; x0) are run through a Chebyshev ReLU surrogate so the same
+	// structure can later match the encrypted VEMPC path.
 	residuals := v.Penalty.ConstraintResidualMat(U, x0)
 	h := chebReLU(residuals, opts.ChebCoeffs, opts.ChebBound, opts.ChebClip)
 	threshold := chebVal(0.0, opts.ChebCoeffs)
@@ -114,6 +121,8 @@ func (v *VariationalMPC) ComputeWeights(U *mat.Dense, x0 []float64, opts WeightO
 		eta = 1.0
 	}
 	for i := 0; i < K; i++ {
+		// Only positive residual mass above the surrogate's zero-level threshold
+		// contributes to the exponential penalty.
 		var s float64
 		_, p := h.Dims()
 		for j := 0; j < p; j++ {
@@ -139,6 +148,7 @@ func (v *VariationalMPC) ComputeWeights(U *mat.Dense, x0 []float64, opts WeightO
 	}
 
 	weights := make([]float64, K)
+	// Normalize in log-space for numerical stability when eta is large.
 	var sum float64
 	for i, v := range logWeights {
 		if math.IsInf(v, -1) {

@@ -3,6 +3,8 @@ package core
 import "gonum.org/v1/gonum/mat"
 
 type MPCProblem struct {
+	// Lambda and Psi map x0 and the stacked control sequence U into the
+	// predicted trajectory X. P, S, H are the condensed quadratic cost terms.
 	A, B   *mat.Dense
 	Q, R   *mat.Dense
 	Qf     *mat.Dense
@@ -50,6 +52,8 @@ func (m *MPCProblem) computePredictionMatrices() (*mat.Dense, *mat.Dense) {
 
 	A_powers := make([]*mat.Dense, N+1)
 	A_powers[0] = Identity(n)
+	// Precompute A^k once so the horizon expansion does not keep multiplying
+	// the same matrices during controller initialization.
 	for k := 1; k <= N; k++ {
 		ap := mat.NewDense(n, n, nil)
 		ap.Mul(A_powers[k-1], A)
@@ -57,11 +61,14 @@ func (m *MPCProblem) computePredictionMatrices() (*mat.Dense, *mat.Dense) {
 	}
 
 	Lambda := mat.NewDense(N*n, n, nil)
+	// Lambda stacks [A; A^2; ...; A^N].
 	for i := 0; i < N; i++ {
 		copyBlock(Lambda, i*n, 0, A_powers[i+1])
 	}
 
 	Psi := mat.NewDense(N*n, N*mIn, nil)
+	// Psi is block lower-triangular because each future state depends only on
+	// current and earlier inputs in the stacked control sequence.
 	for i := 0; i < N; i++ {
 		row := i * n
 		for j := 0; j <= i; j++ {
@@ -77,6 +84,7 @@ func (m *MPCProblem) computePredictionMatrices() (*mat.Dense, *mat.Dense) {
 
 func (m *MPCProblem) computeCostMatrices() (*mat.Dense, *mat.Dense, *mat.Dense) {
 	n, N := m.n, m.N
+	// QBar and RBar are the horizon-stacked state/input penalties.
 	QBar := BlockDiagRepeat(m.Q, N)
 	for i := 0; i < n; i++ {
 		for j := 0; j < n; j++ {
@@ -108,6 +116,8 @@ func (m *MPCProblem) computeCostMatrices() (*mat.Dense, *mat.Dense, *mat.Dense) 
 
 func (m *MPCProblem) BuildConstraintMatrices(Gx *mat.Dense, hx []float64, Gu *mat.Dense, hu []float64) (*mat.Dense, func([]float64) []float64) {
 	N := m.N
+	// The online solver works in condensed coordinates, so the per-step box
+	// constraints are stacked once into G U <= h(x0).
 	GxBar := BlockDiagRepeat(Gx, N)
 	hxBar := TileVector(hx, N)
 	GuBar := BlockDiagRepeat(Gu, N)

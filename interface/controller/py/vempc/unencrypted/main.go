@@ -29,6 +29,8 @@ type response struct {
 }
 
 type observer struct {
+	// The observer lives inside the Go engine so the Python side can stay
+	// stateless and send only measured outputs.
 	A *mat.Dense
 	B *mat.Dense
 	C *mat.Dense
@@ -43,6 +45,7 @@ func newObserver(A, B, C, L *mat.Dense, x0 []float64) *observer {
 }
 
 func (o *observer) Correct(y []float64) []float64 {
+	// Luenberger-style correction step: x <- x + L(y - Cx).
 	cx := core.MatVecMul(o.C, o.x)
 	innovation := make([]float64, len(y))
 	for i := range y {
@@ -58,6 +61,7 @@ func (o *observer) Correct(y []float64) []float64 {
 }
 
 func (o *observer) Predict(u []float64) {
+	// One-step prediction used to carry the estimated state to the next sample.
 	ax := core.MatVecMul(o.A, o.x)
 	bu := core.MatVecMul(o.B, u)
 	for i := range o.x {
@@ -66,6 +70,9 @@ func (o *observer) Predict(u []float64) {
 }
 
 type onlineController struct {
+	// This struct holds the long-lived controller state that would be expensive
+	// to rebuild for every sample: observer state, condensed matrices, warm
+	// starts, and variational sampling settings.
 	backend     string
 	observer    *observer
 	stdSolver   *solvers.StandardQPSolver
@@ -84,6 +91,8 @@ type onlineController struct {
 }
 
 func newOnlineController(cfg engineconfig.Config) (*onlineController, error) {
+	// The Python side exports raw matrices and tuning values. This constructor
+	// validates them and builds the condensed MPC/variational structures once.
 	A, err := denseFrom2D(cfg.A)
 	if err != nil {
 		return nil, err
@@ -129,6 +138,8 @@ func newOnlineController(cfg engineconfig.Config) (*onlineController, error) {
 	Qf := mat.NewDense(n, n, nil)
 	Qf.Scale(cfg.QfScale, Q)
 
+	// Match the QQS3C balancing region: constrain only alpha and the scalar
+	// command magnitude in the online controller.
 	Gx := mat.NewDense(2, n, nil)
 	Gx.Set(0, 1, 1.0)
 	Gx.Set(1, 1, -1.0)
@@ -155,6 +166,8 @@ func newOnlineController(cfg engineconfig.Config) (*onlineController, error) {
 	}
 
 	if cfg.Backend == "" || cfg.Backend == "variational" {
+		// Sigma0 is diagonal here because the Python config exports a scalar prior
+		// width. The variational object then derives SigmaU and its Cholesky factor.
 		sigma0 := scaledIdentity(mpc.StackedInputDim(), cfg.Sigma0*cfg.Sigma0)
 		engine.variational = core.NewVariationalMPC(mpc, penalty, cfg.LambdaParam, sigma0)
 		engine.chebCoeffs = solvers.ChebyshevReLUCoeffs(cfg.ChebOrder, cfg.ChebBound, 0)
@@ -171,6 +184,7 @@ func newOnlineController(cfg engineconfig.Config) (*onlineController, error) {
 }
 
 func (c *onlineController) Step(y []float64) response {
+	// Each online cycle is "correct on y -> solve MPC -> predict with applied u".
 	x := c.observer.Correct(y)
 	switch c.backend {
 	case "standard":
@@ -181,6 +195,8 @@ func (c *onlineController) Step(y []float64) response {
 		c.observer.Predict(u)
 		return response{U: u[0], XHat: x}
 	default:
+		// The variational controller samples candidate input sequences, scores
+		// their constraint violations, and returns the weighted first action.
 		seed := c.rng.Int63()
 		u, _, wSum, acceptNum := solvers.SampleVariationalControl(
 			x,
@@ -270,6 +286,8 @@ func main() {
 		case "shutdown":
 			return
 		case "measure":
+			// The stdin/stdout protocol is intentionally tiny so Python can act as
+			// a simple bridge between the QQS3C plant socket and this Go engine.
 			if len(req.Y) != 2 {
 				_ = encoder.Encode(response{Error: "measurement vector must have length 2"})
 				continue

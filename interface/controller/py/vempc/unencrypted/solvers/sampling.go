@@ -13,8 +13,12 @@ func SampleVariationalControl(
 	chebClip bool,
 	seed int64,
 ) ([]float64, []float64, float64, int) {
+	// U contains K candidate stacked control sequences drawn from the tilted
+	// Gaussian defined by the variational reformulation.
 	U := variational.SampleKappaTilde(x0, K, seed)
 
+	// This exact feasible count is for diagnostics only; the controller itself
+	// uses the polynomial surrogate weights below.
 	feasible := penalty.IsFeasibleMat(U, x0, 1e-6)
 	trueAccept := 0
 	for _, f := range feasible {
@@ -34,6 +38,8 @@ func SampleVariationalControl(
 	_, Nm := U.Dims()
 	UHat := make([]float64, Nm)
 	if wSum == 0 {
+		// Return zeros instead of NaNs so the outer loop can decide how to handle
+		// a fully collapsed sample set.
 		mIn := variational.MPC.InputDim()
 		u0 := make([]float64, mIn)
 		return u0, UHat, 0.0, trueAccept
@@ -45,6 +51,7 @@ func SampleVariationalControl(
 	}
 
 	mIn := variational.MPC.InputDim()
+	// Only the first input in the stacked sequence is applied to the plant.
 	u0 := append([]float64(nil), UHat[:mIn]...)
 	return u0, UHat, wSum, trueAccept
 }

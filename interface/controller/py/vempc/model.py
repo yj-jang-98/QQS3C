@@ -8,6 +8,8 @@ from config import DEFAULT_CONFIG, write_engine_config
 
 class GoVEMPCController:
     def __init__(self, config=DEFAULT_CONFIG, rebuild=True):
+        # This class is intentionally thin: Python owns process management and
+        # TCP I/O, while the Go binary owns state estimation and MPC math.
         self.config = config
         self.base_dir = Path(__file__).resolve().parent
         self.engine_dir = self.base_dir / "unencrypted"
@@ -26,6 +28,8 @@ class GoVEMPCController:
 
     def _build_engine(self):
         env = os.environ.copy()
+        # Go defaults to a user-level cache directory, which may be outside the
+        # writable workspace in this environment. Force a local cache instead.
         env["GOCACHE"] = str(self.engine_dir / ".gocache")
         cmd = ["go", "build", "-buildvcs=false", "-o", str(self.binary_path), "."]
         result = subprocess.run(
@@ -44,6 +48,8 @@ class GoVEMPCController:
             )
 
     def _start_engine(self):
+        # The Go engine speaks newline-delimited JSON over stdin/stdout, which
+        # avoids adding a second socket layer inside the controller process.
         cmd = [str(self.binary_path), "--config", str(self.config_path)]
         self.process = subprocess.Popen(
             cmd,
@@ -56,11 +62,17 @@ class GoVEMPCController:
         )
 
     def compute_control(self, y):
+        response = self.compute_control_detail(y)
+        return float(response["u"])
+
+    def compute_control_detail(self, y):
         if self.process is None or self.process.stdin is None or self.process.stdout is None:
             raise RuntimeError("Go VEMPC engine is not running")
         if self.process.poll() is not None:
             raise RuntimeError(f"Go VEMPC engine exited early\n{self._collect_stderr()}")
 
+        # Each request contains only the current plant measurement. The Go side
+        # keeps the observer state and warm-start data across calls.
         request = {"type": "measure", "y": [float(y[0]), float(y[1])]}
         self.process.stdin.write(json.dumps(request) + "\n")
         self.process.stdin.flush()
@@ -72,13 +84,14 @@ class GoVEMPCController:
         response = json.loads(line)
         if response.get("error"):
             raise RuntimeError(response["error"])
-        return float(response["u"])
+        return response
 
     def close(self):
         if self.process is None:
             return
         try:
             if self.process.poll() is None and self.process.stdin is not None:
+                # Ask the Go process to stop cleanly before forcing termination.
                 self.process.stdin.write(json.dumps({"type": "shutdown"}) + "\n")
                 self.process.stdin.flush()
         except OSError:

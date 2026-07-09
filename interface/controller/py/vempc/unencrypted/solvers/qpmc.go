@@ -12,6 +12,8 @@ type SolverSettings struct {
 }
 
 type StandardQPSolver struct {
+	// This is a soft-constrained condensed MPC solver: violations are penalized
+	// quadratically rather than solved as a hard constrained QP.
 	H        *mat.Dense
 	G        *mat.Dense
 	Rho      float64
@@ -39,6 +41,7 @@ func SolveStandardMPC(
 	solver *StandardQPSolver,
 	warmStart []float64,
 ) ([]float64, []float64, error) {
+	// q = S^T x0 is the state-dependent linear term in the condensed cost.
 	q := matVecMul(S.T(), x0)
 	h := hOfX0(x0)
 
@@ -82,8 +85,10 @@ func SolveStandardMPC(
 
 	var xInit []float64
 	if warmStart != nil {
+		// Reuse the previous solution when the state evolves slowly.
 		xInit = append([]float64(nil), warmStart...)
 	} else {
+		// The unconstrained minimizer gives a good initial point for L-BFGS.
 		xInit = make([]float64, len(q))
 		if err := solveSymmetric(solver.H, q, xInit); err != nil {
 			for i := range xInit {
@@ -97,6 +102,7 @@ func SolveStandardMPC(
 
 	Ustar, err := minimizeLBFGS(xInit, objective, gradient, solver.Settings)
 	if err != nil {
+		// Keep the controller alive even if one numerical solve fails.
 		Ustar = append([]float64(nil), xInit...)
 	}
 	u0 := append([]float64(nil), Ustar[:mIn]...)

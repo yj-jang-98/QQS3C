@@ -6,6 +6,7 @@ import (
 )
 
 type Config struct {
+	// This mirrors config.py::QQS3CVempcConfig.to_engine_dict().
 	Backend     string      `json:"backend"`
 	DT          float64     `json:"dt"`
 	N           int         `json:"N"`
