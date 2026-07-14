@@ -13,11 +13,17 @@ ENGINE_CONFIG_PATH = RUNTIME_DIR / "controller_config.json"
 
 @dataclass(frozen=True)
 class QQS3CVempcConfig:
+    # Selects which Go engine folder model.py builds and starts.
+    # Use "encrypted" to run QQS3C/interface/controller/py/vempc/encrypted.
+    # engine_variant: str = "unencrypted"
+    engine_variant: str = "encrypted"
+    
+
     # "variational" uses the sampling controller; "standard" uses the
     # deterministic condensed MPC solver.
     backend: str = "variational"
     sample_time: float = 0.02
-    horizon: int = 15
+    horizon: int = 12
 
     # QQS3C discrete model at ts=0.02 s. These matrices are copied directly
     # into the exported JSON so the Go engine follows the QQS3C plant model
@@ -45,24 +51,33 @@ class QQS3CVempcConfig:
         (0.47580910538569043, 13.750046647644771),
     )
 
-    q_diag: tuple[float, ...] = (5000.0, 400.0, 1.0, 1.0)
-    r_diag: tuple[float, ...] = (1.0,)
+    q_diag: tuple[float, ...] = (1.0, 10.0, 0.1, 1.0)
+    r_diag: tuple[float, ...] = (0.01,)
     qf_scale: float = 10.0
 
     # The VEMPC state/input bounds are deliberately expressed in the same units
     # used by the QQS3C controller loop.
-    alpha_max: float = math.radians(15.0)
-    u_max: float = 15.0
+    alpha_max: float = 0.35
+    u_max: float = 1.0
 
     # Variational MPC tuning. These are the online sampling parameters that the
     # Go engine uses after the observer state is corrected from measurements.
-    sigma0: float = 6.0
-    lambda_param: float = 0.75
-    k_samples: int = 512
-    cheb_order: int = 7
-    cheb_bound: float = 15.0
-    cheb_eta: float = 1.0
+    sigma0: float = 0.25
+    lambda_param: float = 0.1
+    k_samples: int = 150
+    cheb_order: int = 3
+    cheb_bound: float = 5.0
+    cheb_eta: float = 500.0
     cheb_clip: bool = True
+
+    # CKKS engine settings. These are consumed only by the encrypted Go engine;
+    # the unencrypted engine ignores the extra JSON fields.
+    encrypted_cache_steps: int = 40
+    encrypted_workers: int = 4
+    ckks_log_n: int = 13
+    ckks_log_q: tuple[int, ...] = (33, 30, 30, 30)
+    ckks_log_p: tuple[int, ...] = (35,)
+    ckks_log_default_scale: int = 30
 
     # Plot-only metadata used by ctrl_vempc.py when it annotates the saved
     # result figure. These do not affect the Go engine.
@@ -95,6 +110,12 @@ class QQS3CVempcConfig:
             "chebBound": self.cheb_bound,
             "chebEta": self.cheb_eta,
             "chebClip": self.cheb_clip,
+            "encryptedCacheSteps": self.encrypted_cache_steps,
+            "encryptedWorkers": self.encrypted_workers,
+            "ckksLogN": self.ckks_log_n,
+            "ckksLogQ": list(self.ckks_log_q),
+            "ckksLogP": list(self.ckks_log_p),
+            "ckksLogDefaultScale": self.ckks_log_default_scale,
             "x0": list(self.x0),
         }
 

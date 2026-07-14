@@ -1,0 +1,1 @@
+{"LogN":13,"LogNthRoot":14,"Q":[8589852673,1073692673,1073643521,1073872897],"P":[34359754753],"Xe":{"Type":"DiscreteGaussian","Sigma":3.2,"Bound":19.2},"Xs":{"Type":"Ternary","P":0.6666666666666666},"RingType":"Standard","LogDefaultScale":30}

@@ -12,7 +12,9 @@ class GoVEMPCController:
         # TCP I/O, while the Go binary owns state estimation and MPC math.
         self.config = config
         self.base_dir = Path(__file__).resolve().parent
-        self.engine_dir = self.base_dir / "unencrypted"
+        self.engine_dir = self.base_dir / config.engine_variant
+        if config.engine_variant not in {"unencrypted", "encrypted"}:
+            raise ValueError(f"unsupported VEMPC engine_variant {config.engine_variant!r}")
         self.binary_path = self.engine_dir / ("vempc_engine.exe" if os.name == "nt" else "vempc_engine")
         self.config_path = write_engine_config(config)
         self.process = None
