@@ -1,8 +1,8 @@
 {
   "backend": "variational",
-  "steps": 328,
-  "avg_cycle_ms": 25.69609969512195,
-  "var_cycle_ms": 52.413906411554784,
+  "steps": 675,
+  "avg_cycle_ms": 12.866850962962964,
+  "var_cycle_ms": 38.05755390925463,
   "plot_phase_mode": "hardware_swing_up",
   "results_dir": "C:\\Users\\user\\OneDrive\\Writing\\2026\\4 CDC Var Enc MPPI\\IFAC DEMO\\QQS3C\\interface\\controller\\py\\vempc\\results"
 }

@@ -1,11 +1,11 @@
 {
-  "configHash": "b265d87245a6a35e1043cd1c34521d16386ee63328af6056192659fe48dfa875",
-  "dim": 16,
-  "p": 64,
-  "K": 240,
+  "configHash": "e6a2a66be455e8ba08223c157a1eca03fd4069520cf9e462d4a6e6d93a1d6d8a",
+  "dim": 12,
+  "p": 48,
+  "K": 128,
   "nWorkers": 4,
-  "cacheLen": 40,
-  "logN": 13,
+  "cacheLen": 10,
+  "logN": 12,
   "logQ": [
     33,
     30,
@@ -16,6 +16,6 @@
     35
   ],
   "logDefaultScale": 30,
-  "chebOrder": 3,
-  "stackedInputHorizon": 16
+  "chebOrder": 5,
+  "stackedInputHorizon": 12
 }

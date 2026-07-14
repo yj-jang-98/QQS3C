@@ -51,30 +51,30 @@ class QQS3CVempcConfig:
         (0.47580910538569043, 13.750046647644771),
     )
 
-    q_diag: tuple[float, ...] = (1.0, 10.0, 0.1, 1.0)
-    r_diag: tuple[float, ...] = (0.01,)
+    q_diag: tuple[float, ...] = (5000.0, 400.0, 1.0, 1.0)
+    r_diag: tuple[float, ...] = (1.0,)
     qf_scale: float = 10.0
 
     # The VEMPC state/input bounds are deliberately expressed in the same units
     # used by the QQS3C controller loop.
-    alpha_max: float = 0.35
-    u_max: float = 1.0
+    alpha_max: float = math.radians(15.0)
+    u_max: float = 15.0
 
     # Variational MPC tuning. These are the online sampling parameters that the
     # Go engine uses after the observer state is corrected from measurements.
-    sigma0: float = 0.25
-    lambda_param: float = 0.1
-    k_samples: int = 150
-    cheb_order: int = 3
-    cheb_bound: float = 5.0
-    cheb_eta: float = 500.0
+    sigma0: float = 6.0
+    lambda_param: float = 0.75
+    k_samples: int = 128
+    cheb_order: int = 5
+    cheb_bound: float = 15.0
+    cheb_eta: float = 1.0
     cheb_clip: bool = True
 
     # CKKS engine settings. These are consumed only by the encrypted Go engine;
     # the unencrypted engine ignores the extra JSON fields.
-    encrypted_cache_steps: int = 40
+    encrypted_cache_steps: int = 10
     encrypted_workers: int = 4
-    ckks_log_n: int = 13
+    ckks_log_n: int = 12
     ckks_log_q: tuple[int, ...] = (33, 30, 30, 30)
     ckks_log_p: tuple[int, ...] = (35,)
     ckks_log_default_scale: int = 30

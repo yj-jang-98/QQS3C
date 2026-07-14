@@ -106,11 +106,11 @@ def control_loop():
     sys_c = ct.ss(A, B, C, D)
     sys_d = sys_c.sample((1 / frequency), method='zoh')
 
-    Q_k = np.array([[5, 0, 0, 0],
-                    [0, 1, 0, 0],
-                    [0, 0, 1, 0],
-                    [0, 0, 0, 1]], dtype=float)
-    R_k = np.array([[1]], dtype=float)
+    Q_k = np.array([[1, 0, 0, 0],
+                    [0, 5, 0, 0],
+                    [0, 0, 0.1, 0],
+                    [0, 0, 0, 0.5]], dtype=float)
+    R_k = np.array([[2]], dtype=float)
     K, Sk, Ek = ct.dlqr(sys_d.A, sys_d.B, Q_k, R_k)
 
     # Physical Parameters
@@ -125,7 +125,8 @@ def control_loop():
     mu = 150.0  
 
     # switching target angle
-    angle = 10
+    angle = 15
+    alpha_dot_switch = 15.0
 
     # reliable angle range (for hardware operate limit)
     angle_range = 20
@@ -170,7 +171,12 @@ def control_loop():
                         term = 0
                     u_raw = -1 * mu * E_err * term
 
-                    if(alpha_deg > angle and (not change_flag)):
+                    ready_to_stabilize = (
+                        alpha_deg <= angle
+                        and abs(alpha_dot) < alpha_dot_switch
+                    )
+
+                    if((not ready_to_stabilize) and (not change_flag)):
                         if(-theta > 0):
                             if(u_raw > 0):
                                 voltage = 0.0
